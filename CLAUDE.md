@@ -219,7 +219,7 @@ Estados: `pendiente` | `en curso` | `hecha`. Añade al final las historias nueva
 | API-COR-0003 | `feat/core/api-cor-0003` | hecha |
 | API-INV-0004 | `feat/invoices/api-inv-0004` | hecha |
 | API-INV-0005 | `feat/invoices/api-inv-0005` | hecha |
-| API-SHR-0006 | `feat/shared/api-shr-0006` | pendiente |
+| API-SHR-0006 | `feat/shared/api-shr-0006` | hecha |
 | API-INV-0007 | `feat/invoices/api-inv-0007` | pendiente |
 | API-INV-0008 | `feat/invoices/api-inv-0008` | pendiente |
 | API-INV-0009 | `feat/invoices/api-inv-0009` | pendiente |
@@ -279,6 +279,8 @@ Estados: `pendiente` | `en curso` | `hecha`. Añade al final las historias nueva
 - Puerto `InvoiceExtractor` y adaptador `fake` determinista.
 - `POST /api/v1/invoices/extract` (multipart, 1..10 archivos, campo `provider`) según contrato: éxito parcial, `summary`, errores por archivo, `LOW_CONFIDENCE`.
 - Procesamiento concurrente de archivos con límite (`asyncio.Semaphore`).
+- **Privacidad / DoS** (detectado en api-shr-0006): Starlette vuelca a un archivo temporal **en disco** las partes multipart > 1 MB (`MultiPartParser.spool_max_size`) y no limita el tamaño del body. Parsear el multipart sin tocar disco (p. ej. subir `spool_max_size` por encima del máximo por archivo) y rechazar peticiones cuyo body supere `max_files × max_file_size` + margen, leyendo en streaming (no fiarse de `Content-Length`).
+- Usar `read_limited` + `prepare_file` de `app/shared/files.py` (este último en `asyncio.to_thread`) y mapear `FileRejectedError` a los errores por archivo.
 - Tests de integración del endpoint con el adaptador falso.
 
 ### API-INV-0008 — Adaptador Gemini

@@ -8,6 +8,12 @@ from app.main import create_app
 
 
 @pytest.fixture
+def anyio_backend() -> str:
+    """Los tests `@pytest.mark.anyio` corren solo con asyncio (el runtime de Uvicorn)."""
+    return "asyncio"
+
+
+@pytest.fixture
 def settings() -> Settings:
     return Settings(_env_file=None)
 
