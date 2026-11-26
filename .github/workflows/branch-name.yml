@@ -1,0 +1,30 @@
+name: Nombre de rama
+
+on:
+  pull_request:
+
+permissions: {}
+
+jobs:
+  check:
+    name: Validar nombre de rama
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Comprobar formato <tipo>/<modulo>/api-<mod>-<NNNN>
+        env:
+          BRANCH: ${{ github.head_ref }}
+          ACTOR: ${{ github.event.pull_request.user.login }}
+        run: |
+          # Las ramas de bots (Dependabot, release-please) siguen su propio formato.
+          if [[ "$ACTOR" == "dependabot[bot]" || "$BRANCH" == release-please--* ]]; then
+            echo "Rama de bot ($BRANCH): se omite la validación."
+            exit 0
+          fi
+          regex='^(feat|fix|chore|refactor)/[a-z0-9-]+/api-[a-z]{3}-[0-9]{4}$'
+          if [[ "$BRANCH" =~ $regex ]]; then
+            echo "Nombre de rama válido: $BRANCH"
+          else
+            echo "::error::La rama '$BRANCH' no cumple el formato $regex (ej.: feat/invoices/api-inv-0005)"
+            exit 1
+          fi
