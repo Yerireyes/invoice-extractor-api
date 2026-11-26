@@ -117,6 +117,10 @@ Respuesta `200` (éxito parcial permitido; cada resultado tiene su `status`):
 
 Petición: `{ "invoice": Invoice }` → Respuesta 200: `{ "validation": Validation }`
 
+- Siempre 200 si el JSON cumple el esquema, aunque la factura sea `invalid`: los problemas de negocio van en `validation.issues`.
+- 422 `VALIDATION_ERROR` solo si el body no cumple el esquema (p. ej. un monto como número JSON).
+- No genera `LOW_CONFIDENCE` (no hay confianza de la IA en una factura editada).
+
 ### 2.4 `POST /api/v1/exports/excel` y `POST /api/v1/exports/pdf`
 
 Petición:
@@ -199,8 +203,15 @@ Respuesta 200: archivo binario.
 `Issue = { "code": string, "severity": "error" | "warning" | "info", "field": string | null, "params": object }`
 
 - `valid`: sin issues. `warnings`: solo warning/info. `invalid`: al menos un error.
-- Tolerancia de redondeo: **±0.02** en la moneda de la factura.
-- Las reglas aritméticas solo se aplican si los campos implicados no son `null`.
+- Tolerancia de redondeo: **±0.02** en la moneda de la factura (una diferencia de exactamente 0.02 es válida).
+- Las reglas aritméticas solo se aplican si los campos implicados no son `null`. Excepción: `discount_total` y `line_items[].discount` en `null` cuentan como `0`.
+- `field`: ruta del campo afectado (`total`, `issuer.name`, `line_items.1.amount`, `taxes.0.amount`), útil para resaltarlo en el formulario.
+- `params.expected` / `params.actual`: strings decimales. `expected` se redondea a 2 decimales para mostrarlo (la comparación usa el valor exacto).
+- `params.line` / `params.index`: posición **0-based** (igual que en `field`); para mostrar "línea 2" sumad 1.
+- `params.confidence`: número 0..1.
+- `MISSING_REQUIRED_FIELD` aplica a `issue_date`, `currency`, `total` e `issuer.name` (también si `issuer.name` es texto vacío).
+- `FUTURE_DATE`: `issue_date` posterior a hoy (UTC) **+ 1 día** de margen, para no marcar facturas de husos horarios por delante de UTC.
+- Orden de `issues`: el de la tabla (y por ruta de campo en `LOW_CONFIDENCE`).
 
 | Código | Severidad | Regla | `params` |
 |---|---|---|---|
@@ -302,3 +313,4 @@ Estables: el frontend genera sus tipos a partir de ellos. Un esquema aparece en 
 | 2026-11-25 | API-COR-0003 | Nuevos códigos HTTP `NOT_FOUND` (404) y `METHOD_NOT_ALLOWED` (405). Proveedor `fake` en `/meta` (solo desarrollo). Aclaraciones sobre `title`, `detail`, `params` y `params.errors`. Ejemplo de la sección 5 corregido. Primera publicación de `openapi.json`. | Sí (solo añade) |
 | 2026-11-25 | API-INV-0004 | Esquema de error renombrado `ProblemDetail` → `ProblemDetails` (solo afecta a nombres de tipos generados). `ExtractionResult` como unión discriminada por `status`. Aclarado que los campos "OBLIGATORIO" admiten `null` y generan `MISSING_REQUIRED_FIELD`. Formato decimal exacto (solo strings). Nueva sección 9 con los nombres de esquemas. | Sí (el renombrado no cambia el JSON) |
 | 2026-11-25 | API-INV-0004 | `params` documentados para todos los códigos de error HTTP y por archivo (`max_invoices`, `provider`, `max_mb`, `max_pages`/`pages`, `mime_type`, `retry_after_s` opcional en errores del LLM). | Sí |
+| 2026-11-25 | API-INV-0005 | `POST /invoices/validate` implementado. Convenciones de validación: `discount` nulo = 0, `field` como ruta, `line`/`index` 0-based, `expected` redondeado a 2 decimales, margen de 1 día en `FUTURE_DATE`, orden de `issues`. | Sí |
