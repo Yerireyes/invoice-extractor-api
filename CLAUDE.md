@@ -214,7 +214,7 @@ Estados: `pendiente` | `en curso` | `hecha`. Añade al final las historias nueva
 
 | ID | Rama | Estado |
 |---|---|---|
-| API-COR-0001 | `chore/core/api-cor-0001` | en curso |
+| API-COR-0001 | `chore/core/api-cor-0001` | hecha |
 | API-COR-0002 | `chore/core/api-cor-0002` | pendiente |
 | API-COR-0003 | `feat/core/api-cor-0003` | pendiente |
 | API-INV-0004 | `feat/invoices/api-inv-0004` | pendiente |
