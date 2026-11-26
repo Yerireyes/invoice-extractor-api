@@ -199,6 +199,14 @@ class Validation(Schema):
     issues: list[Issue] = Field(default_factory=list)
 
 
+class ValidateRequest(Schema):
+    invoice: Invoice
+
+
+class ValidateResponse(Schema):
+    validation: Validation
+
+
 # ---------------------------------------------------------------------------
 # Extracción (sección 2.2)
 # ---------------------------------------------------------------------------
