@@ -216,7 +216,7 @@ Estados: `pendiente` | `en curso` | `hecha`. Añade al final las historias nueva
 |---|---|---|
 | API-COR-0001 | `chore/core/api-cor-0001` | hecha |
 | API-COR-0002 | `chore/core/api-cor-0002` | hecha |
-| API-COR-0003 | `feat/core/api-cor-0003` | pendiente |
+| API-COR-0003 | `feat/core/api-cor-0003` | hecha |
 | API-INV-0004 | `feat/invoices/api-inv-0004` | pendiente |
 | API-INV-0005 | `feat/invoices/api-inv-0005` | pendiente |
 | API-SHR-0006 | `feat/shared/api-shr-0006` | pendiente |
@@ -325,5 +325,6 @@ Estados: `pendiente` | `en curso` | `hecha`. Añade al final las historias nueva
 - `release.yml` con **release-please** (tipo `python`): PR de release automático con versión semver y `CHANGELOG.md`. La versión de `/meta` se lee del paquete.
 - `deploy.yml` disparado en **`release: published`**: sube la app a un **Hugging Face Space (SDK Docker)** usando el secreto `HF_TOKEN`. El `README.md` del Space (con frontmatter `sdk: docker`, `app_port: 7860`) se genera en el paso de deploy; no reemplaza el README de GitHub.
 - Smoke test tras el deploy: reintentar `GET /api/v1/health` hasta 200 o fallar el job.
+- `openapi.json` incluye `info.version` (leída del paquete): cuando release-please suba la versión en `pyproject.toml`, el check `export_openapi --check` fallará en su PR. Resolverlo (p. ej. un paso del workflow de release que regenere y commitee `openapi.json` en la rama de release, o actualizar `uv.lock`/`openapi.json` vía `extra-files`).
 - Documentar en el README los pasos manuales del usuario: crear el Space, poner `GEMINI_API_KEY`, `GEMINI_MODEL` y `ALLOWED_ORIGINS` (URL de Vercel) como *secrets* del Space, y `HF_TOKEN` en GitHub.
 - Avisar al frontend por el buzón la URL pública de la API.

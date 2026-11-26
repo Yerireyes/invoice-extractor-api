@@ -1,7 +1,7 @@
 # Contrato de la API — v1
 
 > Fuente de verdad: `invoice-extractor-api/docs/api-contract.md`. Este archivo es una copia publicada por el backend.
-> El `openapi.json` generado por FastAPI debe coincidir con este documento.
+> El `openapi.json` generado por FastAPI debe coincidir con este documento (se publica junto a esta copia).
 
 ## 1. Reglas generales
 
@@ -48,6 +48,11 @@
   "export_languages": ["es", "en"]
 }
 ```
+
+- `version`: versión semver del servicio desplegado (no la del contrato).
+- `limits`: valores configurados en el servidor; el frontend debe usarlos en lugar de constantes propias.
+- `providers[].id`: `gemini` | `ollama` | `fake`. Exactamente un proveedor tiene `default: true`.
+  - `fake` es un extractor **determinista de desarrollo** que devuelve datos de ejemplo. Solo aparece (primero y como `default`) cuando el servidor corre sin clave de Gemini en desarrollo; **nunca en producción**. El frontend debería indicar que los datos no son reales.
 
 ### 2.2 `POST /api/v1/invoices/extract`
 
@@ -192,21 +197,28 @@ Respuesta 200: archivo binario.
 ```json
 {
   "type": "about:blank",
-  "title": "File too large",
-  "status": 413,
-  "code": "FILE_TOO_LARGE",
-  "detail": "Max 10 MB per file",
-  "params": { "max_mb": 10 }
+  "title": "Unprocessable Content",
+  "status": 422,
+  "code": "TOO_MANY_FILES",
+  "detail": null,
+  "params": { "max_files": 10 }
 }
 ```
+
+- `title`: frase estándar del status HTTP (en inglés). **No traducir ni mostrar**: el frontend traduce a partir de `code` + `params`.
+- `detail`: texto técnico opcional (`null` casi siempre). Tampoco es para el usuario final.
+- `params`: siempre presente (puede ser `{}`).
+- Los errores **por archivo** de `/extract` (`FILE_TOO_LARGE`, `NOT_AN_INVOICE`…) no son errores HTTP: van dentro de `results[]` con status 200 (sección 2.2).
 
 | `code` | HTTP | Cuándo |
 |---|---|---|
 | `TOO_MANY_FILES` | 422 | Más archivos que el límite |
 | `NO_FILES` | 422 | Ningún archivo enviado |
 | `TOO_MANY_INVOICES` | 422 | Exportación con más facturas que el límite |
-| `VALIDATION_ERROR` | 422 | Body inválido (`params.errors` con detalle de Pydantic) |
+| `VALIDATION_ERROR` | 422 | Body inválido o ilegible. `params.errors`: lista de `{ "loc": [..], "msg", "type" }` (nunca incluye el valor enviado). Otros 4xx del framework (p. ej. 400 multipart corrupto) usan este código con su propio status |
 | `PROVIDER_NOT_AVAILABLE` | 422 | Se pidió un proveedor deshabilitado |
+| `NOT_FOUND` | 404 | La ruta no existe |
+| `METHOD_NOT_ALLOWED` | 405 | Método HTTP no soportado en esa ruta (header `Allow` con los válidos) |
 | `RATE_LIMITED` | 429 | Demasiadas peticiones por IP (`params.retry_after_s`) |
 | `LLM_QUOTA_EXCEEDED` | 503 | Cuota del proveedor agotada |
 | `LLM_UNAVAILABLE` | 503 | El proveedor no responde |
@@ -241,3 +253,9 @@ Formato: cada hoja es una Tabla de Excel con filtros, encabezado en negrita y co
 ## 8. PDF exportado
 
 Un único PDF, una factura por página: encabezado (tipo, número, fechas), emisor/receptor, tabla de conceptos, impuestos, totales, y un bloque de alertas si las hay. Textos fijos en el idioma de `options.language`.
+
+## 9. Historial de cambios
+
+| Fecha | Historia | Cambio | ¿Compatible? |
+|---|---|---|---|
+| 2026-11-25 | API-COR-0003 | Nuevos códigos HTTP `NOT_FOUND` (404) y `METHOD_NOT_ALLOWED` (405). Proveedor `fake` en `/meta` (solo desarrollo). Aclaraciones sobre `title`, `detail`, `params` y `params.errors`. Ejemplo de la sección 5 corregido. Primera publicación de `openapi.json`. | Sí (solo añade) |

@@ -38,6 +38,9 @@ jobs:
       - name: mypy
         run: uv run mypy
 
+      - name: openapi.json actualizado
+        run: uv run python -m app.scripts.export_openapi --check
+
       - name: pytest + cobertura (mínimo 80 %)
         run: uv run pytest --cov=app --cov-report=term-missing
 
