@@ -1,0 +1,89 @@
+[project]
+name = "invoice-extractor-api"
+version = "0.1.0"
+description = "API REST que extrae datos de facturas de cualquier país con un LLM de visión y los exporta a Excel y PDF."
+readme = "README.md"
+authors = [{ name = "Yerireyes" }]
+requires-python = ">=3.14"
+dependencies = [
+    "fastapi>=0.165.0",
+    "google-genai>=3.6.1",
+    "ollama>=0.6.3",
+    "openpyxl>=3.1.5",
+    "pillow>=13.0.0",
+    "pydantic>=2.14.4",
+    "pydantic-settings>=2.16.3",
+    "pypdfium2>=5.15.2",
+    "python-multipart>=0.0.34",
+    "reportlab>=5.1.2",
+    "slowapi>=0.1.10",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[build-system]
+requires = ["uv_build>=0.13.4,<0.14.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "app"
+module-root = ""
+
+[dependency-groups]
+dev = [
+    "httpx>=0.28.1",
+    "mypy>=2.4.1",
+    "pytest>=9.2.0",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.17.6",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py314"
+extend-exclude = [".venv"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W", "F", "I", "N", "UP", "B", "A", "C4", "SIM", "RUF",
+    "PT", "RET", "ARG", "PTH", "S", "ASYNC", "DTZ", "PL", "TID",
+]
+ignore = [
+    "PLR0913", # muchos argumentos: habitual en dependencias de FastAPI
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "PLR2004"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.File", "fastapi.Form", "fastapi.Query"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+plugins = ["pydantic.mypy"]
+files = ["app", "tests"]
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = ["-ra", "--strict-markers", "--strict-config", "-m", "not live"]
+markers = [
+    "live: llama a APIs reales de IA (requiere clave); excluido por defecto",
+]
+
+[tool.coverage.run]
+source = ["app"]
+branch = true
+
+[tool.coverage.report]
+fail_under = 80
+show_missing = true
+skip_covered = true
+exclude_also = ["if TYPE_CHECKING:", "raise NotImplementedError", "@overload"]
