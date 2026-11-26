@@ -37,6 +37,7 @@ dev = [
     "pytest>=9.2.0",
     "pytest-cov>=7.1.0",
     "ruff>=0.17.6",
+    "types-reportlab>=5.1.0.20261122",
 ]
 
 [tool.ruff]
