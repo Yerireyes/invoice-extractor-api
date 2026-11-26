@@ -29,7 +29,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -60,7 +60,7 @@
             "content": {
               "application/problem+json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProblemDetail"
+                  "$ref": "#/components/schemas/ProblemDetails"
                 }
               }
             }
@@ -107,6 +107,14 @@
         },
         "type": "object",
         "title": "HealthResponse"
+      },
+      "LLMProvider": {
+        "type": "string",
+        "enum": [
+          "gemini",
+          "ollama",
+          "fake"
+        ]
       },
       "Limits": {
         "properties": {
@@ -177,7 +185,7 @@
         ],
         "title": "MetaResponse"
       },
-      "ProblemDetail": {
+      "ProblemDetails": {
         "properties": {
           "type": {
             "type": "string",
@@ -235,21 +243,13 @@
           "status",
           "code"
         ],
-        "title": "ProblemDetail",
+        "title": "ProblemDetails",
         "description": "Cuerpo de error RFC 9457 extendido con `code` y `params`."
-      },
-      "ProviderId": {
-        "type": "string",
-        "enum": [
-          "gemini",
-          "ollama",
-          "fake"
-        ]
       },
       "ProviderInfo": {
         "properties": {
           "id": {
-            "$ref": "#/components/schemas/ProviderId"
+            "$ref": "#/components/schemas/LLMProvider"
           },
           "available": {
             "type": "boolean",

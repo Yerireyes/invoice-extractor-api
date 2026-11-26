@@ -52,7 +52,7 @@ _DEFAULT_STATUS: Mapping[ErrorCode, HTTPStatus] = {
 }
 
 
-class ProblemDetail(BaseModel):
+class ProblemDetails(BaseModel):
     """Cuerpo de error RFC 9457 extendido con `code` y `params`."""
 
     type: str = Field(default="about:blank", examples=["about:blank"])
@@ -92,7 +92,7 @@ def problem_response(
     headers: Mapping[str, str] | None = None,
 ) -> JSONResponse:
     """Construye una respuesta `application/problem+json`."""
-    problem = ProblemDetail(
+    problem = ProblemDetails(
         title=HTTPStatus(status).phrase,
         status=status,
         code=code,
@@ -108,22 +108,22 @@ def problem_response(
 
 
 def problem_responses(*statuses: int) -> dict[int | str, dict[str, Any]]:
-    """Documenta en OpenAPI las respuestas de error indicadas como `ProblemDetail`.
+    """Documenta en OpenAPI las respuestas de error indicadas como `ProblemDetails`.
 
     FastAPI publica el modelo bajo `application/json`; `use_problem_json_in_openapi` lo mueve a
     `application/problem+json`, que es lo que la API devuelve realmente.
     """
     return {
-        status: {"model": ProblemDetail, "description": HTTPStatus(status).phrase}
+        status: {"model": ProblemDetails, "description": HTTPStatus(status).phrase}
         for status in statuses
     }
 
 
-_PROBLEM_REF = "#/components/schemas/ProblemDetail"
+_PROBLEM_REF = "#/components/schemas/ProblemDetails"
 
 
 def use_problem_json_in_openapi(app: FastAPI) -> None:
-    """Publica las respuestas `ProblemDetail` de OpenAPI como `application/problem+json`."""
+    """Publica las respuestas `ProblemDetails` de OpenAPI como `application/problem+json`."""
     build_openapi = app.openapi
 
     def openapi() -> dict[str, Any]:
