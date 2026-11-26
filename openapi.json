@@ -1,0 +1,273 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Invoice Extractor API",
+    "summary": "Extrae datos de facturas de cualquier país con IA y los exporta a Excel y PDF.",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/v1/health": {
+      "get": {
+        "tags": [
+          "service"
+        ],
+        "summary": "Comprobación de salud",
+        "operationId": "health_api_v1_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/meta": {
+      "get": {
+        "tags": [
+          "service"
+        ],
+        "summary": "Límites, formatos aceptados, proveedores e idiomas de exportación",
+        "operationId": "meta_api_v1_meta_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetaResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetail"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "ErrorCode": {
+        "type": "string",
+        "enum": [
+          "TOO_MANY_FILES",
+          "NO_FILES",
+          "TOO_MANY_INVOICES",
+          "VALIDATION_ERROR",
+          "PROVIDER_NOT_AVAILABLE",
+          "NOT_FOUND",
+          "METHOD_NOT_ALLOWED",
+          "RATE_LIMITED",
+          "LLM_QUOTA_EXCEEDED",
+          "LLM_UNAVAILABLE",
+          "INTERNAL_ERROR"
+        ],
+        "title": "ErrorCode",
+        "description": "Códigos de error HTTP del contrato (sección 5)."
+      },
+      "ExportLanguage": {
+        "type": "string",
+        "enum": [
+          "es",
+          "en"
+        ]
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "const": "ok",
+            "title": "Status",
+            "default": "ok"
+          }
+        },
+        "type": "object",
+        "title": "HealthResponse"
+      },
+      "Limits": {
+        "properties": {
+          "max_files_per_request": {
+            "type": "integer",
+            "title": "Max Files Per Request"
+          },
+          "max_file_size_mb": {
+            "type": "integer",
+            "title": "Max File Size Mb"
+          },
+          "max_pdf_pages": {
+            "type": "integer",
+            "title": "Max Pdf Pages"
+          },
+          "max_invoices_per_export": {
+            "type": "integer",
+            "title": "Max Invoices Per Export"
+          }
+        },
+        "type": "object",
+        "required": [
+          "max_files_per_request",
+          "max_file_size_mb",
+          "max_pdf_pages",
+          "max_invoices_per_export"
+        ],
+        "title": "Limits"
+      },
+      "MetaResponse": {
+        "properties": {
+          "version": {
+            "type": "string",
+            "title": "Version"
+          },
+          "limits": {
+            "$ref": "#/components/schemas/Limits"
+          },
+          "accepted_mime_types": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Accepted Mime Types"
+          },
+          "providers": {
+            "items": {
+              "$ref": "#/components/schemas/ProviderInfo"
+            },
+            "type": "array",
+            "title": "Providers"
+          },
+          "export_languages": {
+            "items": {
+              "$ref": "#/components/schemas/ExportLanguage"
+            },
+            "type": "array",
+            "title": "Export Languages"
+          }
+        },
+        "type": "object",
+        "required": [
+          "version",
+          "limits",
+          "accepted_mime_types",
+          "providers",
+          "export_languages"
+        ],
+        "title": "MetaResponse"
+      },
+      "ProblemDetail": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "title": "Type",
+            "default": "about:blank",
+            "examples": [
+              "about:blank"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "title": "Title",
+            "examples": [
+              "Unprocessable Content"
+            ]
+          },
+          "status": {
+            "type": "integer",
+            "title": "Status",
+            "examples": [
+              422
+            ]
+          },
+          "code": {
+            "$ref": "#/components/schemas/ErrorCode"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail",
+            "examples": [
+              "Max 10 files per request"
+            ]
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params",
+            "examples": [
+              {
+                "max_files": 10
+              }
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "title",
+          "status",
+          "code"
+        ],
+        "title": "ProblemDetail",
+        "description": "Cuerpo de error RFC 9457 extendido con `code` y `params`."
+      },
+      "ProviderId": {
+        "type": "string",
+        "enum": [
+          "gemini",
+          "ollama",
+          "fake"
+        ]
+      },
+      "ProviderInfo": {
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/ProviderId"
+          },
+          "available": {
+            "type": "boolean",
+            "title": "Available"
+          },
+          "default": {
+            "type": "boolean",
+            "title": "Default"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "available",
+          "default"
+        ],
+        "title": "ProviderInfo"
+      }
+    }
+  }
+}
