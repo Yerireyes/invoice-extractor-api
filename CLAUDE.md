@@ -26,13 +26,13 @@ Si no tienes acceso a `../buzon`, pide al usuario que lo añada a la sesión (`/
 
 | Propósito | Herramienta |
 |---|---|
-| Lenguaje | Python 3.13 |
+| Lenguaje | Python 3.14 |
 | Paquetes / entorno | **uv** (`pyproject.toml` + `uv.lock`) |
 | API | FastAPI + Uvicorn |
 | Esquemas / config | Pydantic v2 + pydantic-settings |
 | IA | `google-genai` (Gemini), `ollama` (opcional, local) |
 | Excel / PDF | openpyxl / ReportLab |
-| Archivos de entrada | Pillow, PyMuPDF |
+| Archivos de entrada | Pillow, pypdfium2 (se descartó PyMuPDF 2.x: arrastra onnxruntime/numpy y duplica el tamaño de la imagen) |
 | Rate limit | slowapi |
 | Calidad | Ruff (lint + format), mypy (`strict`) |
 | Tests | pytest, pytest-cov, httpx (`TestClient`) |
@@ -180,7 +180,7 @@ Si `GEMINI_API_KEY` está vacío en desarrollo, el proveedor por defecto es `fak
 
 ## Docker
 
-- `Dockerfile` multi-stage: etapa de build con uv, imagen final `python:3.13-slim`, **usuario no root**, `HEALTHCHECK` contra `/api/v1/health`, puerto desde `PORT`.
+- `Dockerfile` multi-stage: etapa de build con uv, imagen final `python:3.14-slim`, **usuario no root**, `HEALTHCHECK` contra `/api/v1/health`, puerto desde `PORT`.
 - Uvicorn con `--proxy-headers --forwarded-allow-ips="*"` (detrás del proxy de Hugging Face, para que el rate limit vea la IP real).
 - `docker-compose.yml`: servicio `api` (lee `.env`) y servicio `ollama` bajo el profile `ollama`.
 - `.dockerignore` completo (sin `.venv`, `.git`, tests, fixtures).
@@ -214,7 +214,7 @@ Estados: `pendiente` | `en curso` | `hecha`. Añade al final las historias nueva
 
 | ID | Rama | Estado |
 |---|---|---|
-| API-COR-0001 | `chore/core/api-cor-0001` | pendiente |
+| API-COR-0001 | `chore/core/api-cor-0001` | hecha |
 | API-COR-0002 | `chore/core/api-cor-0002` | pendiente |
 | API-COR-0003 | `feat/core/api-cor-0003` | pendiente |
 | API-INV-0004 | `feat/invoices/api-inv-0004` | pendiente |
@@ -271,7 +271,7 @@ Estados: `pendiente` | `en curso` | `hecha`. Añade al final las historias nueva
 *Como usuario quiero subir fotos o PDFs y recibir errores claros si no son válidos.*
 - Validar tipo **por contenido** (magic bytes), no solo por extensión o MIME declarado.
 - Validar tamaño **leyendo por bloques** (no confiar en `Content-Length`).
-- PDF → imágenes por página con PyMuPDF (máx. `max_pdf_pages`); imágenes: corregir orientación EXIF y redimensionar a un máximo razonable.
+- PDF → imágenes por página con pypdfium2 (máx. `max_pdf_pages`); imágenes: corregir orientación EXIF y redimensionar a un máximo razonable.
 - Todo en memoria. Tests con fixtures válidos, corruptos y en límite.
 
 ### API-INV-0007 — Endpoint de extracción con extractor falso
@@ -312,7 +312,7 @@ Estados: `pendiente` | `en curso` | `hecha`. Añade al final las historias nueva
 *Como usuario quiero un PDF limpio de mis facturas.*
 - Adaptador `pdf.py` con ReportLab según la sección 8 del contrato: una factura por página, conceptos en tabla, bloque de alertas.
 - Fuente con soporte Unicode completo (acentos, ñ, €, símbolos de otras monedas) incluida en el repo.
-- `POST /api/v1/exports/pdf`. Tests: número de páginas y texto extraído con PyMuPDF.
+- `POST /api/v1/exports/pdf`. Tests: número de páginas y texto extraído con pypdfium2.
 
 ### API-INV-0013 — Adaptador Ollama (modo privado)
 *Como usuario preocupado por la privacidad quiero procesar facturas sin enviarlas a la nube.*
