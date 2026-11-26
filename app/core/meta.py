@@ -1,15 +1,11 @@
 """Metadatos públicos del servicio: límites, formatos aceptados y proveedores de IA."""
 
-from typing import Literal
-
 from pydantic import BaseModel
 
-from app.core.config import Settings
+from app.core.config import LLMProvider, Settings
 from app.core.version import APP_VERSION
 from app.export.i18n import EXPORT_LANGUAGES, ExportLanguage
 from app.shared.files import ACCEPTED_MIME_TYPES
-
-type ProviderId = Literal["gemini", "ollama", "fake"]
 
 
 class Limits(BaseModel):
@@ -20,7 +16,7 @@ class Limits(BaseModel):
 
 
 class ProviderInfo(BaseModel):
-    id: ProviderId
+    id: LLMProvider
     available: bool
     default: bool
 

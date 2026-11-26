@@ -24,6 +24,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         title="Invoice Extractor API",
         summary="Extrae datos de facturas de cualquier país con IA y los exporta a Excel y PDF.",
         version=APP_VERSION,
+        # Un solo esquema por modelo (sin `Invoice-Input`/`Invoice-Output`): nombres estables
+        # para los tipos que genera el frontend.
+        separate_input_output_schemas=False,
     )
     app.dependency_overrides[get_settings] = lambda: settings
     app.add_middleware(

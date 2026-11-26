@@ -46,6 +46,6 @@ def test_problem_details_documented_as_problem_json() -> None:
     error_response = schema["paths"]["/api/v1/meta"]["get"]["responses"]["500"]
 
     assert error_response["content"] == {
-        "application/problem+json": {"schema": {"$ref": "#/components/schemas/ProblemDetail"}}
+        "application/problem+json": {"schema": {"$ref": "#/components/schemas/ProblemDetails"}}
     }
-    assert "ProblemDetail" in schema["components"]["schemas"]
+    assert "ProblemDetails" in schema["components"]["schemas"]
