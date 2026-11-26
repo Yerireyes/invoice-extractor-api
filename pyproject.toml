@@ -4,6 +4,8 @@ version = "0.1.0"
 description = "API REST que extrae datos de facturas de cualquier país con un LLM de visión y los exporta a Excel y PDF."
 readme = "README.md"
 authors = [{ name = "Yerireyes" }]
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.14"
 dependencies = [
     "fastapi>=0.165.0",

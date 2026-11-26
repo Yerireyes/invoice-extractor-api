@@ -103,3 +103,7 @@ uv run pytest --cov=app --cov-report=term-missing
 uv run ruff check . && uv run ruff format --check .
 uv run mypy
 ```
+
+## Licencia
+
+[MIT](LICENSE)
