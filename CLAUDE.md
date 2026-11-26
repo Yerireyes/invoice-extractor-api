@@ -193,7 +193,7 @@ Solo lo que aporta valor:
 |---|---|---|
 | `ci.yml` | PR a `main` y push a `main` | Ruff (lint + format), mypy, pytest + cobertura ≥ 80 %, verificar `openapi.json` actualizado, `docker build` (sin push) |
 | `branch-name.yml` | PR | Valida el nombre de la rama con el regex |
-| `dependabot.yml` | mensual | Actualizaciones de pip y GitHub Actions agrupadas |
+| `dependabot.yml` | mensual | Actualizaciones agrupadas de dependencias (ecosistema `uv`, actualiza `uv.lock`), GitHub Actions e imágenes Docker (sin subir de versión de Python) |
 | `release.yml` | push a `main` (api-dep-0014) | release-please: mantiene un PR de release con versión semver + CHANGELOG |
 | `deploy.yml` | **release publicado** (api-dep-0014) | Despliega a Hugging Face Spaces + smoke test a `/health` |
 
@@ -215,7 +215,7 @@ Estados: `pendiente` | `en curso` | `hecha`. Añade al final las historias nueva
 | ID | Rama | Estado |
 |---|---|---|
 | API-COR-0001 | `chore/core/api-cor-0001` | hecha |
-| API-COR-0002 | `chore/core/api-cor-0002` | pendiente |
+| API-COR-0002 | `chore/core/api-cor-0002` | en curso |
 | API-COR-0003 | `feat/core/api-cor-0003` | pendiente |
 | API-INV-0004 | `feat/invoices/api-inv-0004` | pendiente |
 | API-INV-0005 | `feat/invoices/api-inv-0005` | pendiente |
@@ -243,7 +243,7 @@ Estados: `pendiente` | `en curso` | `hecha`. Añade al final las historias nueva
 *Como desarrollador quiero que cada PR se verifique automáticamente.*
 - `.github/workflows/ci.yml`: uv con caché, ruff, mypy, pytest con cobertura (umbral 80 %), `docker build`.
 - `.github/workflows/branch-name.yml` con el regex de ramas.
-- `.github/dependabot.yml` (pip + github-actions, mensual, agrupado).
+- `.github/dependabot.yml` (uv + github-actions + docker, mensual, agrupado).
 - Badge de CI en el README.
 
 ### API-COR-0003 — Manejo de errores y metadatos
