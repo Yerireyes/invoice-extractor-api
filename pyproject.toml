@@ -88,4 +88,9 @@ branch = true
 fail_under = 80
 show_missing = true
 skip_covered = true
-exclude_also = ["if TYPE_CHECKING:", "raise NotImplementedError", "@overload"]
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "@overload",
+    "if __name__ == .__main__.:",
+]
