@@ -9,7 +9,7 @@
 |---|---|
 | Prefijo | `/api/v1/...` |
 | Formato | JSON, claves en `snake_case` |
-| Dinero, cantidades, tasas | **Strings decimales** (`"1234.50"`). Nunca `float`. |
+| Dinero, cantidades, tasas | **Strings decimales** (`"1234.50"`, `"-50"`): regex `^-?\d{1,15}(\.\d{1,6})?$`, sin exponentes ni separadores de miles. Los números JSON se **rechazan** (422). Nunca `float`. |
 | Fechas | ISO 8601 (`"2026-11-25"`) |
 | Moneda | ISO 4217 (`"MXN"`, `"EUR"`, `"USD"`) |
 | País | ISO 3166-1 alfa-2 (`"MX"`, `"ES"`), opcional |
@@ -96,7 +96,11 @@ Respuesta `200` (éxito parcial permitido; cada resultado tiene su `status`):
 }
 ```
 
+- Cada elemento de `results` es un `ExtractionResult`: **unión discriminada por `status`**.
+  - `"success"` → `ExtractionSuccess`: `file_name`, `invoice`, `validation`, `field_confidence`, `meta`.
+  - `"error"` → `ExtractionFailure`: `file_name`, `error` (`FileError`: `{ code, params }`).
 - `field_confidence`: claves en notación de ruta (`issuer.tax_id`, `line_items.0.amount`), valores 0..1.
+- `meta.provider`: `gemini` | `ollama` | `fake`.
 - Errores por archivo: `NOT_AN_INVOICE`, `UNREADABLE_FILE`, `UNSUPPORTED_FILE_TYPE`, `FILE_TOO_LARGE`, `PDF_TOO_MANY_PAGES`, `EXTRACTION_FAILED`.
 - Si **toda** la petición es inválida (p. ej. demasiados archivos) → error HTTP (sección 5).
 
@@ -171,6 +175,15 @@ Respuesta 200: archivo binario.
 }
 ```
 
+**Notas sobre el esquema**
+
+- **"OBLIGATORIO" significa obligatorio para que la factura sea válida, no para que la petición se acepte.** `issue_date`, `currency`, `total` e `issuer.name` admiten `null` en el JSON: si faltan, la validación devuelve `MISSING_REQUIRED_FIELD` (status `invalid`) en lugar de un 422. Así una factura que la IA leyó parcialmente no se pierde y el usuario puede completarla.
+- `currency` se normaliza a mayúsculas y admite cualquier texto corto (≤ 10). Si no es ISO 4217, la validación devuelve `INVALID_CURRENCY`.
+- `country` (2 letras) y `language` (2 letras) se normalizan (`mx` → `MX`, `ES` → `es`). Si tienen otro formato → 422.
+- Valores por defecto si se omiten: `document_type` = `"invoice"`, `issuer` = Party vacío, `line_items` y `taxes` = `[]`, el resto `null`.
+- Obligatorios en el JSON (422 si faltan): `line_items[].amount` y `taxes[].amount`.
+- Límites de longitud: textos cortos ≤ 300 caracteres; `description`, `address` y `notes` ≤ 5000.
+
 ## 4. Validación
 
 `Validation = { "status": "valid" | "warnings" | "invalid", "issues": Issue[] }`
@@ -224,6 +237,8 @@ Respuesta 200: archivo binario.
 | `LLM_UNAVAILABLE` | 503 | El proveedor no responde |
 | `INTERNAL_ERROR` | 500 | Error inesperado (sin detalles internos) |
 
+Esquema OpenAPI: `ProblemDetails`. Todas las respuestas 4xx/5xx se declaran con `application/problem+json`.
+
 ## 6. Límites v1
 
 | Límite | Valor |
@@ -254,8 +269,24 @@ Formato: cada hoja es una Tabla de Excel con filtros, encabezado en negrita y co
 
 Un único PDF, una factura por página: encabezado (tipo, número, fechas), emisor/receptor, tabla de conceptos, impuestos, totales, y un bloque de alertas si las hay. Textos fijos en el idioma de `options.language`.
 
-## 9. Historial de cambios
+## 9. Nombres de esquemas (`components.schemas` de `openapi.json`)
+
+Estables: el frontend genera sus tipos a partir de ellos. Un esquema aparece en `openapi.json` cuando existe el endpoint que lo usa.
+
+| Esquema | Uso |
+|---|---|
+| `Invoice`, `Party`, `LineItem`, `Tax` | Factura (sección 3) |
+| `Validation`, `Issue` | Validación (sección 4) |
+| `ExtractResponse`, `ExtractionResult` (`ExtractionSuccess` \| `ExtractionFailure`), `FileError`, `ExtractionMeta`, `ExtractSummary` | `/invoices/extract` |
+| `ValidateRequest`, `ValidateResponse` | `/invoices/validate` |
+| `ExportRequest`, `ExportOptions` | `/exports/*` |
+| `MetaResponse`, `Limits`, `ProviderInfo` | `/meta` |
+| `HealthResponse` | `/health` |
+| `ProblemDetails` | Errores RFC 9457 |
+
+## 10. Historial de cambios
 
 | Fecha | Historia | Cambio | ¿Compatible? |
 |---|---|---|---|
 | 2026-11-25 | API-COR-0003 | Nuevos códigos HTTP `NOT_FOUND` (404) y `METHOD_NOT_ALLOWED` (405). Proveedor `fake` en `/meta` (solo desarrollo). Aclaraciones sobre `title`, `detail`, `params` y `params.errors`. Ejemplo de la sección 5 corregido. Primera publicación de `openapi.json`. | Sí (solo añade) |
+| 2026-11-25 | API-INV-0004 | Esquema de error renombrado `ProblemDetail` → `ProblemDetails` (solo afecta a nombres de tipos generados). `ExtractionResult` como unión discriminada por `status`. Aclarado que los campos "OBLIGATORIO" admiten `null` y generan `MISSING_REQUIRED_FIELD`. Formato decimal exacto (solo strings). Nueva sección 9 con los nombres de esquemas. | Sí (el renombrado no cambia el JSON) |
