@@ -1,6 +1,11 @@
-"""Datos de prueba sintéticos compartidos."""
+"""Datos de prueba sintéticos compartidos (nunca facturas reales)."""
 
+import io
 from typing import Any
+
+from PIL import Image
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
 
 
 def invoice_payload(**overrides: Any) -> dict[str, Any]:
@@ -42,3 +47,29 @@ def invoice_payload(**overrides: Any) -> dict[str, Any]:
     }
     payload.update(overrides)
     return payload
+
+
+def image_bytes(
+    fmt: str, size: tuple[int, int] = (120, 80), mode: str = "RGB", **save: Any
+) -> bytes:
+    """Imagen sintética de un color en el formato indicado (JPEG, PNG, WEBP...)."""
+    color: object = (200, 30, 30, 128) if mode == "RGBA" else "red"
+    if mode == "P":
+        color = 1
+    image = Image.new(mode, size, color)  # type: ignore[arg-type]
+    output = io.BytesIO()
+    image.save(output, format=fmt, **save)
+    return output.getvalue()
+
+
+def pdf_bytes(
+    pages: int = 1, *, encrypt: str | None = None, pagesize: tuple[float, float] = A4
+) -> bytes:
+    """PDF sintético con `pages` páginas de texto (opcionalmente cifrado)."""
+    output = io.BytesIO()
+    pdf = canvas.Canvas(output, pagesize=pagesize, encrypt=encrypt)
+    for number in range(1, pages + 1):
+        pdf.drawString(72, 720, f"Factura sintética - página {number}")
+        pdf.showPage()
+    pdf.save()
+    return output.getvalue()
