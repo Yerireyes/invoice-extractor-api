@@ -15,6 +15,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,7 @@ class ErrorCode(StrEnum):
     PROVIDER_NOT_AVAILABLE = "PROVIDER_NOT_AVAILABLE"
     NOT_FOUND = "NOT_FOUND"
     METHOD_NOT_ALLOWED = "METHOD_NOT_ALLOWED"
+    REQUEST_TOO_LARGE = "REQUEST_TOO_LARGE"
     RATE_LIMITED = "RATE_LIMITED"
     LLM_QUOTA_EXCEEDED = "LLM_QUOTA_EXCEEDED"
     LLM_UNAVAILABLE = "LLM_UNAVAILABLE"
@@ -45,6 +47,7 @@ _DEFAULT_STATUS: Mapping[ErrorCode, HTTPStatus] = {
     ErrorCode.PROVIDER_NOT_AVAILABLE: HTTPStatus.UNPROCESSABLE_CONTENT,
     ErrorCode.NOT_FOUND: HTTPStatus.NOT_FOUND,
     ErrorCode.METHOD_NOT_ALLOWED: HTTPStatus.METHOD_NOT_ALLOWED,
+    ErrorCode.REQUEST_TOO_LARGE: HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
     ErrorCode.RATE_LIMITED: HTTPStatus.TOO_MANY_REQUESTS,
     ErrorCode.LLM_QUOTA_EXCEEDED: HTTPStatus.SERVICE_UNAVAILABLE,
     ErrorCode.LLM_UNAVAILABLE: HTTPStatus.SERVICE_UNAVAILABLE,
@@ -152,6 +155,7 @@ def _validation_errors(errors: Sequence[Any]) -> list[dict[str, Any]]:
 _HTTP_STATUS_CODES: Mapping[int, ErrorCode] = {
     HTTPStatus.NOT_FOUND: ErrorCode.NOT_FOUND,
     HTTPStatus.METHOD_NOT_ALLOWED: ErrorCode.METHOD_NOT_ALLOWED,
+    HTTPStatus.REQUEST_ENTITY_TOO_LARGE: ErrorCode.REQUEST_TOO_LARGE,
 }
 
 
@@ -192,3 +196,45 @@ def register_error_handlers(app: FastAPI) -> None:
     async def _unhandled(request: Request, exc: Exception) -> JSONResponse:
         logger.error("Error no controlado en %s %s", request.method, request.url.path, exc_info=exc)
         return problem_response(ErrorCode.INTERNAL_ERROR, HTTPStatus.INTERNAL_SERVER_ERROR)
+
+
+class RequestTooLargeProblemMiddleware:
+    """Convierte el 413 en texto plano de Starlette en Problem Details (`REQUEST_TOO_LARGE`).
+
+    El límite de body de FastAPI/Starlette responde por su cuenta, sin pasar por los handlers,
+    cuando `Content-Length` ya supera el límite. Debe registrarse *dentro* de CORS para que la
+    respuesta reescrita conserve las cabeceras CORS.
+    """
+
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        replaced = False
+
+        async def send_problem(message: Message) -> None:
+            nonlocal replaced
+            if message["type"] == "http.response.start" and _is_plain_413(message):
+                replaced = True
+                response = problem_response(
+                    ErrorCode.REQUEST_TOO_LARGE, HTTPStatus.REQUEST_ENTITY_TOO_LARGE
+                )
+                await response(scope, receive, send)
+                return
+            if replaced and message["type"] == "http.response.body":
+                return
+            await send(message)
+
+        await self.app(scope, receive, send_problem)
+
+
+def _is_plain_413(message: Message) -> bool:
+    if message["status"] != HTTPStatus.REQUEST_ENTITY_TOO_LARGE:
+        return False
+    headers = dict(message.get("headers", []))
+    content_type: bytes = headers.get(b"content-type", b"")
+    return content_type.startswith(b"text/plain")
