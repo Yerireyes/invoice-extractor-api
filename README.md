@@ -51,7 +51,22 @@ app/
 Los servicios dependen de **puertos** (`Protocol`); el adaptador concreto se elige con
 dependencias de FastAPI a partir de la configuración.
 
-El contrato de la API está en [`docs/api-contract.md`](docs/api-contract.md).
+## API
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| `GET` | `/api/v1/health` | Comprobación de salud |
+| `GET` | `/api/v1/meta` | Límites, formatos aceptados, proveedores de IA e idiomas de exportación |
+
+Los errores siguen [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) (`application/problem+json`)
+con un `code` estable y `params`, para que el cliente traduzca los mensajes:
+
+```json
+{ "type": "about:blank", "title": "Not Found", "status": 404, "code": "NOT_FOUND", "detail": null, "params": {} }
+```
+
+- Contrato (fuente de verdad): [`docs/api-contract.md`](docs/api-contract.md)
+- Esquema OpenAPI versionado: [`openapi.json`](openapi.json) — el CI falla si está desactualizado.
 
 ## Puesta en marcha
 
@@ -106,6 +121,7 @@ uv run pytest                                  # tests (excluye los marcados com
 uv run pytest --cov=app --cov-report=term-missing
 uv run ruff check . && uv run ruff format --check .
 uv run mypy
+uv run python -m app.scripts.export_openapi   # regenera openapi.json tras cambiar la API
 ```
 
 ## Integración continua
@@ -114,7 +130,7 @@ Cada PR a `main` (y cada push a `main`) ejecuta en GitHub Actions:
 
 | Workflow | Qué verifica |
 |---|---|
-| [`ci.yml`](.github/workflows/ci.yml) | Ruff (lint + formato), mypy estricto, pytest con cobertura ≥ 80 % y `docker build` |
+| [`ci.yml`](.github/workflows/ci.yml) | Ruff (lint + formato), mypy estricto, `openapi.json` actualizado, pytest con cobertura ≥ 80 % y `docker build` |
 | [`branch-name.yml`](.github/workflows/branch-name.yml) | Ramas con el formato `<tipo>/<modulo>/api-<mod>-<NNNN>` |
 
 Dependabot propone cada mes actualizaciones agrupadas de dependencias, actions e imágenes Docker.
