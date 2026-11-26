@@ -101,7 +101,16 @@ Respuesta `200` (éxito parcial permitido; cada resultado tiene su `status`):
   - `"error"` → `ExtractionFailure`: `file_name`, `error` (`FileError`: `{ code, params }`).
 - `field_confidence`: claves en notación de ruta (`issuer.tax_id`, `line_items.0.amount`), valores 0..1.
 - `meta.provider`: `gemini` | `ollama` | `fake`.
-- Errores por archivo: `NOT_AN_INVOICE`, `UNREADABLE_FILE`, `UNSUPPORTED_FILE_TYPE`, `FILE_TOO_LARGE`, `PDF_TOO_MANY_PAGES`, `EXTRACTION_FAILED`.
+- Errores por archivo (`results[].error`):
+
+| `code` | Cuándo | `params` |
+|---|---|---|
+| `FILE_TOO_LARGE` | El archivo supera el tamaño máximo | `{ "max_mb": 10 }` |
+| `PDF_TOO_MANY_PAGES` | El PDF supera el máximo de páginas | `{ "max_pages": 5, "pages": 8 }` |
+| `UNSUPPORTED_FILE_TYPE` | El contenido no es JPEG/PNG/WebP/PDF (se detecta por contenido, no por extensión) | `{ "mime_type": "image/gif" }` (`null` si no se reconoce) |
+| `UNREADABLE_FILE` | Archivo corrupto o ilegible | `{}` |
+| `NOT_AN_INVOICE` | La IA determina que no es una factura | `{}` |
+| `EXTRACTION_FAILED` | La IA no devolvió un resultado utilizable | `{}` |
 - Si **toda** la petición es inválida (p. ej. demasiados archivos) → error HTTP (sección 5).
 
 ### 2.3 `POST /api/v1/invoices/validate`
@@ -223,19 +232,21 @@ Respuesta 200: archivo binario.
 - `params`: siempre presente (puede ser `{}`).
 - Los errores **por archivo** de `/extract` (`FILE_TOO_LARGE`, `NOT_AN_INVOICE`…) no son errores HTTP: van dentro de `results[]` con status 200 (sección 2.2).
 
-| `code` | HTTP | Cuándo |
-|---|---|---|
-| `TOO_MANY_FILES` | 422 | Más archivos que el límite |
-| `NO_FILES` | 422 | Ningún archivo enviado |
-| `TOO_MANY_INVOICES` | 422 | Exportación con más facturas que el límite |
-| `VALIDATION_ERROR` | 422 | Body inválido o ilegible. `params.errors`: lista de `{ "loc": [..], "msg", "type" }` (nunca incluye el valor enviado). Otros 4xx del framework (p. ej. 400 multipart corrupto) usan este código con su propio status |
-| `PROVIDER_NOT_AVAILABLE` | 422 | Se pidió un proveedor deshabilitado |
-| `NOT_FOUND` | 404 | La ruta no existe |
-| `METHOD_NOT_ALLOWED` | 405 | Método HTTP no soportado en esa ruta (header `Allow` con los válidos) |
-| `RATE_LIMITED` | 429 | Demasiadas peticiones por IP (`params.retry_after_s`) |
-| `LLM_QUOTA_EXCEEDED` | 503 | Cuota del proveedor agotada |
-| `LLM_UNAVAILABLE` | 503 | El proveedor no responde |
-| `INTERNAL_ERROR` | 500 | Error inesperado (sin detalles internos) |
+| `code` | HTTP | Cuándo | `params` |
+|---|---|---|---|
+| `TOO_MANY_FILES` | 422 | Más archivos que el límite | `{ "max_files": 10 }` |
+| `NO_FILES` | 422 | Ningún archivo enviado | `{}` |
+| `TOO_MANY_INVOICES` | 422 | Exportación con más facturas que el límite | `{ "max_invoices": 100 }` |
+| `VALIDATION_ERROR` | 422 | Body inválido o ilegible. Otros 4xx del framework (p. ej. 400 multipart corrupto) usan este código con su propio status | `{ "errors": [{ "loc": [..], "msg", "type" }] }` (nunca incluye el valor enviado) |
+| `PROVIDER_NOT_AVAILABLE` | 422 | Se pidió un proveedor deshabilitado | `{ "provider": "ollama" }` |
+| `NOT_FOUND` | 404 | La ruta no existe | `{}` |
+| `METHOD_NOT_ALLOWED` | 405 | Método HTTP no soportado en esa ruta | `{}` (header `Allow` con los válidos) |
+| `RATE_LIMITED` | 429 | Demasiadas peticiones por IP | `{ "retry_after_s": 42 }` + header `Retry-After` |
+| `LLM_QUOTA_EXCEEDED` | 503 | Cuota del proveedor agotada | `{}` o `{ "retry_after_s": 30 }` + header `Retry-After` cuando el proveedor indica la espera |
+| `LLM_UNAVAILABLE` | 503 | El proveedor no responde | igual que `LLM_QUOTA_EXCEEDED` |
+| `INTERNAL_ERROR` | 500 | Error inesperado (sin detalles internos) | `{}` |
+
+Los nombres de `params` son estables: el frontend construye los mensajes con ellos.
 
 Esquema OpenAPI: `ProblemDetails`. Todas las respuestas 4xx/5xx se declaran con `application/problem+json`.
 
@@ -290,3 +301,4 @@ Estables: el frontend genera sus tipos a partir de ellos. Un esquema aparece en 
 |---|---|---|---|
 | 2026-11-25 | API-COR-0003 | Nuevos códigos HTTP `NOT_FOUND` (404) y `METHOD_NOT_ALLOWED` (405). Proveedor `fake` en `/meta` (solo desarrollo). Aclaraciones sobre `title`, `detail`, `params` y `params.errors`. Ejemplo de la sección 5 corregido. Primera publicación de `openapi.json`. | Sí (solo añade) |
 | 2026-11-25 | API-INV-0004 | Esquema de error renombrado `ProblemDetail` → `ProblemDetails` (solo afecta a nombres de tipos generados). `ExtractionResult` como unión discriminada por `status`. Aclarado que los campos "OBLIGATORIO" admiten `null` y generan `MISSING_REQUIRED_FIELD`. Formato decimal exacto (solo strings). Nueva sección 9 con los nombres de esquemas. | Sí (el renombrado no cambia el JSON) |
+| 2026-11-25 | API-INV-0004 | `params` documentados para todos los códigos de error HTTP y por archivo (`max_invoices`, `provider`, `max_mb`, `max_pages`/`pages`, `mime_type`, `retry_after_s` opcional en errores del LLM). | Sí |
