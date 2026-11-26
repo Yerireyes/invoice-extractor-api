@@ -67,10 +67,70 @@
           }
         }
       }
+    },
+    "/api/v1/invoices/validate": {
+      "post": {
+        "tags": [
+          "invoices"
+        ],
+        "summary": "Revalida una factura editada (no llama a la IA)",
+        "operationId": "validate_api_v1_invoices_validate_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ValidateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ValidateResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Unprocessable Content",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "DocumentType": {
+        "type": "string",
+        "enum": [
+          "invoice",
+          "receipt",
+          "credit_note",
+          "other"
+        ]
+      },
       "ErrorCode": {
         "type": "string",
         "enum": [
@@ -108,6 +168,237 @@
         "type": "object",
         "title": "HealthResponse"
       },
+      "Invoice": {
+        "properties": {
+          "document_type": {
+            "$ref": "#/components/schemas/DocumentType",
+            "default": "invoice"
+          },
+          "invoice_number": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Invoice Number"
+          },
+          "issue_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Issue Date",
+            "description": "Obligatorio (validación)."
+          },
+          "due_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Due Date"
+          },
+          "currency": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 10,
+                "minLength": 1,
+                "description": "ISO 4217 (p. ej. `MXN`). Si no es válido, la validación lo marca."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Currency",
+            "description": "Obligatorio (validación)."
+          },
+          "country": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "ISO 3166-1 alfa-2 (p. ej. `MX`)."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
+          "language": {
+            "anyOf": [
+              {
+                "type": "string",
+                "description": "ISO 639-1 (p. ej. `es`)."
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Language"
+          },
+          "issuer": {
+            "$ref": "#/components/schemas/Party"
+          },
+          "recipient": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Party"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "line_items": {
+            "items": {
+              "$ref": "#/components/schemas/LineItem"
+            },
+            "type": "array",
+            "title": "Line Items"
+          },
+          "subtotal": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^-?\\d{1,15}(\\.\\d{1,6})?$",
+                "examples": [
+                  "1234.50"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subtotal"
+          },
+          "discount_total": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^-?\\d{1,15}(\\.\\d{1,6})?$",
+                "examples": [
+                  "1234.50"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discount Total"
+          },
+          "taxes": {
+            "items": {
+              "$ref": "#/components/schemas/Tax"
+            },
+            "type": "array",
+            "title": "Taxes"
+          },
+          "total": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^-?\\d{1,15}(\\.\\d{1,6})?$",
+                "examples": [
+                  "1234.50"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total",
+            "description": "Obligatorio (validación)."
+          },
+          "payment_method": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Method"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 5000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "title": "Invoice"
+      },
+      "Issue": {
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/IssueCode"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/Severity"
+          },
+          "field": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Field",
+            "description": "Ruta del campo, p. ej. `total` o `line_items.0.amount`."
+          },
+          "params": {
+            "additionalProperties": true,
+            "type": "object",
+            "title": "Params"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "severity"
+        ],
+        "title": "Issue"
+      },
+      "IssueCode": {
+        "type": "string",
+        "enum": [
+          "MISSING_REQUIRED_FIELD",
+          "INVALID_CURRENCY",
+          "TOTAL_MISMATCH",
+          "SUBTOTAL_MISMATCH",
+          "LINE_AMOUNT_MISMATCH",
+          "TAX_MISMATCH",
+          "DUE_BEFORE_ISSUE",
+          "FUTURE_DATE",
+          "LOW_CONFIDENCE"
+        ],
+        "title": "IssueCode"
+      },
       "LLMProvider": {
         "type": "string",
         "enum": [
@@ -143,6 +434,103 @@
           "max_invoices_per_export"
         ],
         "title": "Limits"
+      },
+      "LineItem": {
+        "properties": {
+          "description": {
+            "type": "string",
+            "maxLength": 5000,
+            "title": "Description",
+            "default": ""
+          },
+          "quantity": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^-?\\d{1,15}(\\.\\d{1,6})?$",
+                "examples": [
+                  "1234.50"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Quantity"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "unit_price": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^-?\\d{1,15}(\\.\\d{1,6})?$",
+                "examples": [
+                  "1234.50"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Price"
+          },
+          "discount": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^-?\\d{1,15}(\\.\\d{1,6})?$",
+                "examples": [
+                  "1234.50"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Discount"
+          },
+          "tax_rate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^-?\\d{1,15}(\\.\\d{1,6})?$",
+                "examples": [
+                  "1234.50"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Rate",
+            "description": "Porcentaje (`16` = 16 %)."
+          },
+          "amount": {
+            "type": "string",
+            "pattern": "^-?\\d{1,15}(\\.\\d{1,6})?$",
+            "title": "Amount",
+            "description": "cantidad * precio unitario - descuento",
+            "examples": [
+              "1234.50"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "amount"
+        ],
+        "title": "LineItem"
       },
       "MetaResponse": {
         "properties": {
@@ -184,6 +572,86 @@
           "export_languages"
         ],
         "title": "MetaResponse"
+      },
+      "Party": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "tax_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Id"
+          },
+          "tax_id_type": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tax Id Type",
+            "description": "Texto libre: RFC, NIF, CUIT, VAT, EIN..."
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 5000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Address"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          }
+        },
+        "type": "object",
+        "title": "Party",
+        "description": "Emisor o receptor. En el emisor, `name` es obligatorio (lo comprueba la validación)."
       },
       "ProblemDetails": {
         "properties": {
@@ -267,6 +735,125 @@
           "default"
         ],
         "title": "ProviderInfo"
+      },
+      "Severity": {
+        "type": "string",
+        "enum": [
+          "error",
+          "warning",
+          "info"
+        ]
+      },
+      "Tax": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "rate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^-?\\d{1,15}(\\.\\d{1,6})?$",
+                "examples": [
+                  "1234.50"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rate",
+            "description": "Porcentaje (`16` = 16 %)."
+          },
+          "base": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^-?\\d{1,15}(\\.\\d{1,6})?$",
+                "examples": [
+                  "1234.50"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Base"
+          },
+          "amount": {
+            "type": "string",
+            "pattern": "^-?\\d{1,15}(\\.\\d{1,6})?$",
+            "title": "Amount",
+            "examples": [
+              "1234.50"
+            ]
+          }
+        },
+        "type": "object",
+        "required": [
+          "amount"
+        ],
+        "title": "Tax"
+      },
+      "ValidateRequest": {
+        "properties": {
+          "invoice": {
+            "$ref": "#/components/schemas/Invoice"
+          }
+        },
+        "type": "object",
+        "required": [
+          "invoice"
+        ],
+        "title": "ValidateRequest"
+      },
+      "ValidateResponse": {
+        "properties": {
+          "validation": {
+            "$ref": "#/components/schemas/Validation"
+          }
+        },
+        "type": "object",
+        "required": [
+          "validation"
+        ],
+        "title": "ValidateResponse"
+      },
+      "Validation": {
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/ValidationStatus"
+          },
+          "issues": {
+            "items": {
+              "$ref": "#/components/schemas/Issue"
+            },
+            "type": "array",
+            "title": "Issues"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "Validation"
+      },
+      "ValidationStatus": {
+        "type": "string",
+        "enum": [
+          "valid",
+          "warnings",
+          "invalid"
+        ]
       }
     }
   }

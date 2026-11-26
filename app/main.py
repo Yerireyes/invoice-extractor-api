@@ -8,6 +8,7 @@ from app.core.config import Settings, get_settings
 from app.core.errors import problem_responses, register_error_handlers
 from app.core.logging import configure_logging
 from app.core.version import APP_VERSION
+from app.invoices.api import router as invoices_router
 
 API_PREFIX = "/api/v1"
 
@@ -38,6 +39,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     )
     register_error_handlers(app)
     app.include_router(core_router, prefix=API_PREFIX, responses=problem_responses(500))
+    app.include_router(
+        invoices_router, prefix=f"{API_PREFIX}/invoices", responses=problem_responses(500)
+    )
     return app
 
 
