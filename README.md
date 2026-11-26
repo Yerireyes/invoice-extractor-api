@@ -1,5 +1,9 @@
 # Invoice Extractor API
 
+[![CI](https://github.com/Yerireyes/invoice-extractor-api/actions/workflows/ci.yml/badge.svg)](https://github.com/Yerireyes/invoice-extractor-api/actions/workflows/ci.yml)
+[![Python 3.14](https://img.shields.io/badge/python-3.14-blue)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 API REST que recibe **fotos o PDFs de facturas de cualquier país**, extrae sus datos con un
 LLM de visión, valida que los números cuadren y los exporta a **Excel** y **PDF**.
 
@@ -103,6 +107,17 @@ uv run pytest --cov=app --cov-report=term-missing
 uv run ruff check . && uv run ruff format --check .
 uv run mypy
 ```
+
+## Integración continua
+
+Cada PR a `main` (y cada push a `main`) ejecuta en GitHub Actions:
+
+| Workflow | Qué verifica |
+|---|---|
+| [`ci.yml`](.github/workflows/ci.yml) | Ruff (lint + formato), mypy estricto, pytest con cobertura ≥ 80 % y `docker build` |
+| [`branch-name.yml`](.github/workflows/branch-name.yml) | Ramas con el formato `<tipo>/<modulo>/api-<mod>-<NNNN>` |
+
+Dependabot propone cada mes actualizaciones agrupadas de dependencias, actions e imágenes Docker.
 
 ## Licencia
 
