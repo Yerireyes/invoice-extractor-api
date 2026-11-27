@@ -200,7 +200,7 @@ Todas las variables están documentadas en [`.env.example`](.env.example).
 | Variable | Por defecto | Descripción |
 |---|---|---|
 | `APP_ENV` | `development` | `development` \| `production` |
-| `PORT` | `8000` | Puerto HTTP (en Hugging Face Spaces: `7860`) |
+| `PORT` | `8000` | Puerto HTTP (Render lo fija automáticamente) |
 | `LLM_PROVIDER` | `gemini` | `gemini` \| `ollama` \| `fake` |
 | `GEMINI_API_KEY` | — | Clave de Google AI Studio (secreto) |
 | `GEMINI_MODEL` | — | Modelo Flash con visión (recomendado: `gemini-3.5-flash-lite`) |
@@ -247,40 +247,48 @@ Producción solo cambia **al publicar un release**, nunca en cada push a `main`:
    [`CHANGELOG.md`](CHANGELOG.md). También actualiza la versión en `pyproject.toml`, `uv.lock` y
    `openapi.json` (`/meta` y `/docs` la leen del paquete).
 2. Al mergear ese PR, release-please crea el tag `vX.Y.Z` y el GitHub Release.
-3. [`deploy.yml`](.github/workflows/deploy.yml) sube la app a un **Hugging Face Space (SDK Docker)** y
-   espera a que `/api/v1/meta` anuncie la nueva versión y `/api/v1/health` responda 200. Si no lo hace en
-   20 minutos, el job falla. También se puede lanzar a mano (*Run workflow*).
+3. [`deploy.yml`](.github/workflows/deploy.yml) construye la imagen Docker, la publica en
+   **GitHub Container Registry** (`ghcr.io/yerireyes/invoice-extractor-api:X.Y.Z` y `:latest`) y pide a
+   **[Render](https://render.com)** que despliegue esa imagen exacta (por digest). Después espera a que
+   `/api/v1/meta` anuncie la nueva versión y `/api/v1/health` responda 200; si no lo hace en 15 minutos,
+   el job falla. También se puede lanzar a mano (*Actions → Deploy → Run workflow*).
+
+> Hugging Face Spaces se descartó: desde 2026 los Spaces Docker solo están disponibles en planes de pago.
 
 ### Configuración inicial (una sola vez)
 
-**Hugging Face**
+**1. Publicar la primera imagen.** En *Actions → Deploy → Run workflow* (rama `main`). Sin Render
+configurado, el workflow solo publica la imagen y termina con un aviso. Después, en tu perfil de GitHub →
+*Packages* → `invoice-extractor-api` → *Package settings* → *Change visibility* → **Public** (Render
+descarga imágenes públicas sin credenciales).
 
-1. Crea un Space en <https://huggingface.co/new-space> con **SDK: Docker** (plantilla *Blank*) y hardware
-   *CPU basic* (gratis).
-2. En *Settings → Variables and secrets* del Space, añade como **secrets**:
-   - `GEMINI_API_KEY`: tu clave de Google AI Studio.
-   - `GEMINI_MODEL`: `gemini-3.5-flash-lite`.
-   - `ALLOWED_ORIGINS`: la URL del frontend en Vercel (p. ej. `https://invoice-extractor-web.vercel.app`).
-3. Crea un token en <https://huggingface.co/settings/tokens> (*Fine-grained*, con permiso de escritura
-   solo sobre ese Space).
+**2. Crear el servicio en Render** (<https://dashboard.render.com> → *New* → *Web Service*):
 
-El README del Space (frontmatter `sdk: docker`, `app_port: 7860`) y el puerto `7860` se generan en el
-paso de deploy: no hay que mantener nada aparte.
+- *Source*: **Existing Image** → `ghcr.io/yerireyes/invoice-extractor-api:latest`.
+- *Name*: p. ej. `invoice-extractor-api` (define la URL `https://<name>.onrender.com`).
+- *Instance type*: **Free** (0.1 CPU, 512 MB; se duerme tras 15 min sin tráfico y tarda ~1 min en
+  despertar; 750 h gratis al mes).
+- *Environment variables*: `GEMINI_API_KEY` (tu clave de Google AI Studio), `GEMINI_MODEL`
+  (`gemini-3.5-flash-lite`) y `ALLOWED_ORIGINS` (la URL del frontend en Vercel; mientras no exista,
+  `http://localhost:5173`). `APP_ENV=production` ya viene en la imagen y Render fija `PORT` solo.
+- *Advanced → Health Check Path*: `/api/v1/health`.
 
-**GitHub** (*Settings → Secrets and variables → Actions*)
+Cuando esté creado: *Settings → Deploy Hook* → copia la URL (es un secreto).
+
+**3. GitHub** (*Settings → Secrets and variables → Actions*)
 
 | Tipo | Nombre | Valor |
 |---|---|---|
-| Variable | `HF_SPACE` | `usuario/nombre` del Space |
-| Secreto | `HF_TOKEN` | El token de Hugging Face del paso 3 |
+| Secreto | `RENDER_DEPLOY_HOOK` | La URL del deploy hook de Render |
+| Variable | `RENDER_URL` | `https://<name>.onrender.com` (sin `/` final) |
 | Secreto | `RELEASE_PLEASE_TOKEN` | [PAT fine-grained](https://github.com/settings/personal-access-tokens/new) solo para este repositorio con permisos *Contents* y *Pull requests* de lectura y escritura |
 
 `RELEASE_PLEASE_TOKEN` es necesario porque lo que crea el `GITHUB_TOKEN` por defecto no dispara otros
 workflows: el PR de release no ejecutaría los checks obligatorios de `main` y el release no lanzaría el
 despliegue.
 
-La API queda en `https://<usuario>-<nombre>.hf.space` (documentación en `/docs`). Un Space gratuito se
-duerme tras 48 h sin tráfico; la primera petición después tarda unos segundos en despertarlo.
+La API queda en `https://<name>.onrender.com` (documentación en `/docs`). Al estar en el plan gratuito,
+la primera petición tras un rato sin uso tarda alrededor de un minuto.
 
 ## Licencia
 

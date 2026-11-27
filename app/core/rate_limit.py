@@ -1,6 +1,6 @@
 """Límites de uso: peticiones por IP (ventana deslizante) y cuota diaria global de documentos.
 
-Ambos viven en memoria del proceso: sirven para una sola instancia (p. ej. un Hugging Face Space).
+Ambos viven en memoria del proceso: sirven para una sola instancia (p. ej. Render gratuito).
 Con varias réplicas habría que usar un almacenamiento compartido (`limits` soporta Redis).
 """
 

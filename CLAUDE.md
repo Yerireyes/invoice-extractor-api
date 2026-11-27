@@ -156,7 +156,7 @@ docker compose --profile ollama up        # API + Ollama local
 | Variable | Ejemplo | Descripción |
 |---|---|---|
 | `APP_ENV` | `development` | `development` \| `production` |
-| `PORT` | `8000` | En Hugging Face Spaces: `7860` |
+| `PORT` | `8000` | En Render lo fija la plataforma |
 | `LLM_PROVIDER` | `gemini` | `gemini` \| `ollama` \| `fake` |
 | `GEMINI_API_KEY` | — | Secreto. Nunca en el repo |
 | `GEMINI_MODEL` | `gemini-3.5-flash-lite` | Modelo Flash con visión vigente. Elegido el 2026-11-26: estable, nivel gratuito de 15 RPM / 500 RPD y probado con la API real. `gemini-3.8-flash` (5 RPM / 20 RPD) respondía 503/504 por saturación |
@@ -184,7 +184,7 @@ Si `GEMINI_API_KEY` o `GEMINI_MODEL` están vacíos en desarrollo, el proveedor 
 ## Docker
 
 - `Dockerfile` multi-stage: etapa de build con uv, imagen final `python:3.14-slim`, **usuario no root**, `HEALTHCHECK` contra `/api/v1/health`, puerto desde `PORT`.
-- Uvicorn con `--proxy-headers --forwarded-allow-ips="*"` (detrás del proxy de Hugging Face, para que el rate limit vea la IP real).
+- Uvicorn con `--proxy-headers --forwarded-allow-ips="*"` (detrás del proxy de Render, para que el rate limit vea la IP real).
 - `docker-compose.yml`: servicio `api` (lee `.env`) y servicio `ollama` bajo el profile `ollama`.
 - `.dockerignore` completo (sin `.venv`, `.git`, tests, fixtures).
 
@@ -198,7 +198,7 @@ Solo lo que aporta valor:
 | `branch-name.yml` | PR | Valida el nombre de la rama con el regex |
 | `dependabot.yml` | mensual | Actualizaciones agrupadas de dependencias (ecosistema `uv`, actualiza `uv.lock`), GitHub Actions e imágenes Docker (sin subir de versión de Python) |
 | `release.yml` | push a `main` (api-dep-0014) | release-please: mantiene un PR de release con versión semver + CHANGELOG |
-| `deploy.yml` | **release publicado** (api-dep-0014) | Despliega a Hugging Face Spaces + smoke test a `/health` |
+| `deploy.yml` | **release publicado** (api-dep-0014, api-dep-0015) | Imagen a GHCR → deploy en Render (deploy hook por digest) + smoke test de versión en `/meta` y `/health` |
 
 **Estrategia de despliegue:** CI en cada PR y en `main`; **producción solo al publicar un release** (no en cada push a `main`). release-please genera la versión a partir de los commits (`feat` → minor, `fix` → patch).
 
@@ -231,6 +231,7 @@ Estados: `pendiente` | `en curso` | `hecha`. Añade al final las historias nueva
 | API-EXP-0012 | `feat/export/api-exp-0012` | hecha |
 | API-INV-0013 | `feat/invoices/api-inv-0013` | hecha |
 | API-DEP-0014 | `chore/deploy/api-dep-0014` | hecha |
+| API-DEP-0015 | `fix/deploy/api-dep-0015` | hecha |
 
 ### API-COR-0001 — Estructura base del proyecto
 *Como desarrollador quiero un proyecto base funcional para construir sobre él.*
@@ -335,3 +336,10 @@ Estados: `pendiente` | `en curso` | `hecha`. Añade al final las historias nueva
 - Documentar en el README los pasos manuales del usuario: crear el Space, poner `GEMINI_API_KEY`, `GEMINI_MODEL` y `ALLOWED_ORIGINS` (URL de Vercel) como *secrets* del Space, y `HF_TOKEN` en GitHub.
 - Avisar al frontend por el buzón la URL pública de la API.
 - **Tras publicar v1.0.0**: quitar `"release-as": "1.0.0"` de `release-please-config.json` (solo fuerza la primera versión; si se queda, release-please seguiría proponiendo 1.0.0).
+
+### API-DEP-0015 — Despliegue en Render
+*Como dueño del proyecto quiero desplegar gratis: Hugging Face ya no permite Spaces Docker en el plan gratuito.*
+- `deploy.yml`: imagen `linux/amd64` publicada en GHCR (`:X.Y.Z` y `:latest`) y deploy en Render vía deploy hook con `imgURL` por digest (secreto `RENDER_DEPLOY_HOOK`, variable `RENDER_URL`). Smoke test de versión.
+- Lanzado a mano sin Render configurado: solo publica la imagen (arranque inicial del servicio).
+- Tags de release `vX.Y.Z` (`include-component-in-tag: false`).
+- README con los pasos manuales en Render y GHCR.
