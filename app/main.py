@@ -14,6 +14,7 @@ from app.core.errors import (
 from app.core.logging import configure_logging
 from app.core.rate_limit import DailyQuota, IpRateLimiter
 from app.core.version import APP_VERSION
+from app.export.api import router as exports_router
 from app.invoices.api import MB, extract_body_limit, extract_router
 from app.invoices.api import router as invoices_router
 
@@ -59,6 +60,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(
         invoices_router,
         prefix=f"{API_PREFIX}/invoices",
+        responses=problem_responses(500),
+        max_body_size=JSON_BODY_LIMIT,
+    )
+
+    app.include_router(
+        exports_router,
+        prefix=f"{API_PREFIX}/exports",
         responses=problem_responses(500),
         max_body_size=JSON_BODY_LIMIT,
     )
