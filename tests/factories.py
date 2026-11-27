@@ -73,3 +73,45 @@ def pdf_bytes(
         pdf.showPage()
     pdf.save()
     return output.getvalue()
+
+
+_COLUMNS = ((60, "Cantidad"), (130, "Concepto"), (340, "P. unitario"), (450, "Importe"))
+
+
+def invoice_pdf_bytes() -> bytes:
+    """Factura sintética (datos ficticios) renderizada como un PDF legible por un LLM.
+
+    Cuadra con el ejemplo del contrato: 2 h x 500.00 = 1000.00 + IVA 16 % 160.00 = 1160.00 MXN.
+    """
+    output = io.BytesIO()
+    pdf = canvas.Canvas(output, pagesize=A4)
+    bold, regular = "Helvetica-Bold", "Helvetica"
+    rows: list[tuple[str, int, int, int, str]] = [
+        (bold, 18, 60, 760, "FACTURA"),
+        (regular, 11, 60, 735, "Folio: A-00123"),
+        (regular, 11, 60, 718, "Fecha de emision: 20/11/2026"),
+        (regular, 11, 60, 701, "Fecha de vencimiento: 20/12/2026"),
+        (bold, 12, 60, 670, "Emisor: Comercial Ejemplo S.A. de C.V."),
+        (regular, 11, 60, 653, "RFC: CEJ010101AB1"),
+        (regular, 11, 60, 636, "Av. Siempre Viva 123, Ciudad de Mexico, Mexico"),
+        (bold, 12, 60, 605, "Cliente: Cliente Demo"),
+        (regular, 11, 60, 588, "RFC: XAXX010101000"),
+        *((bold, 11, x, 550, text) for x, text in _COLUMNS),
+        (regular, 11, 60, 532, "2 h"),
+        (regular, 11, 130, 532, "Servicio de consultoria"),
+        (regular, 11, 340, 532, "$500.00"),
+        (regular, 11, 450, 532, "$1,000.00"),
+        (regular, 11, 340, 490, "Subtotal:"),
+        (regular, 11, 450, 490, "$1,000.00"),
+        (regular, 11, 340, 472, "IVA 16%:"),
+        (regular, 11, 450, 472, "$160.00"),
+        (bold, 12, 340, 450, "Total:"),
+        (bold, 12, 450, 450, "$1,160.00 MXN"),
+        (regular, 11, 60, 420, "Forma de pago: Transferencia"),
+    ]
+    for font, size, x, y, text in rows:
+        pdf.setFont(font, size)
+        pdf.drawString(x, y, text)
+    pdf.showPage()
+    pdf.save()
+    return output.getvalue()
