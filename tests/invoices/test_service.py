@@ -7,6 +7,7 @@ import pytest
 
 from app.core.config import LLMProvider
 from app.core.errors import AppError, ErrorCode
+from app.core.rate_limit import DailyQuota
 from app.invoices.ports import ExtractionFailedError, ExtractionOutput, NotAnInvoiceError
 from app.invoices.schemas import ExtractionFailure, ExtractionSuccess, Invoice
 from app.invoices.service import ExtractionService, IncomingFile
@@ -70,9 +71,17 @@ def _png(width: int = 10) -> bytes:
     return image_bytes("PNG", size=(width, 10))
 
 
-def _service(extractor: StubExtractor, **overrides: int) -> ExtractionService:
-    options = {"max_file_size_bytes": 1024 * 1024, "max_pdf_pages": 5} | overrides
-    return ExtractionService(extractor, today=TODAY, **options)
+def _service(
+    extractor: StubExtractor, *, concurrency: int = 3, daily_quota: DailyQuota | None = None
+) -> ExtractionService:
+    return ExtractionService(
+        extractor,
+        max_file_size_bytes=1024 * 1024,
+        max_pdf_pages=5,
+        today=TODAY,
+        concurrency=concurrency,
+        daily_quota=daily_quota,
+    )
 
 
 async def test_successful_file_is_extracted_and_validated() -> None:

@@ -32,7 +32,7 @@ LLM de visión, valida que los números cuadren y los exporta a **Excel** y **PD
 | IA | `google-genai` (Gemini), `ollama` |
 | Excel / PDF | openpyxl / ReportLab |
 | Archivos de entrada | Pillow, pypdfium2 |
-| Rate limit | slowapi |
+| Rate limit | `limits` |
 | Calidad | Ruff, mypy (`strict`) |
 | Tests | pytest, pytest-cov, httpx |
 
@@ -109,7 +109,7 @@ multi-stage, corre con un usuario sin privilegios e incluye un `HEALTHCHECK`.
 
 **Gemini**: crea una clave gratuita en [Google AI Studio](https://aistudio.google.com/apikey) y ponla en `.env`
 junto con el modelo. A noviembre de 2026 se recomienda `gemini-3.5-flash-lite`: en el nivel gratuito
-ofrece 15 peticiones/min y 50/día (frente a 5/min y 20/día de `gemini-3.8-flash`, que además se
+ofrece 15 peticiones/min y 500/día (frente a 5/min y 20/día de `gemini-3.8-flash`, que además se
 satura con frecuencia) y extrae correctamente las facturas de prueba en ~4 s. La lista vigente está en la
 [documentación de modelos](https://ai.google.dev/gemini-api/docs/models) y los límites de tu proyecto
 en [AI Studio](https://aistudio.google.com/rate-limit). El adaptador usa un esquema
@@ -145,6 +145,19 @@ Resultados con `gemini-3.5-flash-lite` (2026-11-26):
 Los documentos se regeneran con `uv run python -m tests.eval.generate` (los importes esperados se
 calculan con `Decimal` y un test verifica que todos cuadran).
 
+## Protección de la cuota
+
+La cuota gratuita de Gemini es pequeña (15 peticiones/min y 500/día en `gemini-3.5-flash-lite`), así
+que `/invoices/extract` tiene dos límites, ambos en memoria (pensados para una sola instancia):
+
+| Límite | Por defecto | Al superarlo |
+|---|---|---|
+| Peticiones por IP real (detrás de proxy, vía `X-Forwarded-For`) | 10 por minuto | 429 `RATE_LIMITED` + `Retry-After` |
+| Documentos enviados a Gemini al día (global) | 450 (reinicio a medianoche del Pacífico, como Google) | 503 `LLM_QUOTA_EXCEEDED` + `Retry-After` |
+
+Una petición con varios archivos reserva todos sus documentos de golpe: o caben todos o se rechaza
+entera. El extractor `fake` no consume cuota.
+
 ## Configuración
 
 Todas las variables están documentadas en [`.env.example`](.env.example).
@@ -161,7 +174,8 @@ Todas las variables están documentadas en [`.env.example`](.env.example).
 | `OLLAMA_BASE_URL` | `http://ollama:11434` | URL de Ollama |
 | `OLLAMA_MODEL` | `qwen2.5vl` | Modelo de visión de Ollama |
 | `ALLOWED_ORIGINS` | `http://localhost:5173` | Orígenes CORS (separados por comas) |
-| `RATE_LIMIT_EXTRACT` | `10/minute` | Límite de extracciones por IP |
+| `RATE_LIMIT_EXTRACT` | `10/minute` | Límite de extracciones por IP (ventana deslizante) |
+| `DAILY_DOCUMENT_LIMIT` | `450` | Documentos/día enviados a Gemini; `0` = sin tope |
 | `LOG_LEVEL` | `INFO` | Nivel de logging |
 
 ## Desarrollo

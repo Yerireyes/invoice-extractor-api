@@ -3,6 +3,7 @@
 from functools import lru_cache
 from typing import Annotated, Literal, Self
 
+from limits import parse
 from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
@@ -32,12 +33,21 @@ class Settings(BaseSettings):
     # HTTP
     allowed_origins: Annotated[list[str], NoDecode] = ["http://localhost:5173"]
     rate_limit_extract: str = "10/minute"
+    """Peticiones a `/invoices/extract` por IP (sintaxis de `limits`: "10/minute", "100/hour")."""
+    daily_document_limit: int = Field(default=450, ge=0)
+    """Documentos enviados a Gemini por día (reinicio a medianoche del Pacífico). 0 = sin tope."""
 
     # Límites v1 (sección 6 del contrato)
     max_files_per_request: int = Field(default=10, ge=1)
     max_file_size_mb: int = Field(default=10, ge=1)
     max_pdf_pages: int = Field(default=5, ge=1)
     max_invoices_per_export: int = Field(default=100, ge=1)
+
+    @field_validator("rate_limit_extract")
+    @classmethod
+    def _valid_rate_limit(cls, value: str) -> str:
+        parse(value)  # lanza ValueError si la sintaxis no es válida
+        return value
 
     @field_validator("allowed_origins", mode="before")
     @classmethod

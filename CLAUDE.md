@@ -33,7 +33,7 @@ Si no tienes acceso a `../buzon`, pide al usuario que lo añada a la sesión (`/
 | IA | `google-genai` (Gemini), `ollama` (opcional, local) |
 | Excel / PDF | openpyxl / ReportLab |
 | Archivos de entrada | Pillow, pypdfium2 (se descartó PyMuPDF 2.x: arrastra onnxruntime/numpy y duplica el tamaño de la imagen) |
-| Rate limit | slowapi |
+| Rate limit | `limits` (motor de slowapi) desde una dependencia de FastAPI: estado por app y fácil de testear (slowapi se descartó por su `Limiter` global) |
 | Calidad | Ruff (lint + format), mypy (`strict`) |
 | Tests | pytest, pytest-cov, httpx (`TestClient`) |
 
@@ -159,13 +159,14 @@ docker compose --profile ollama up        # API + Ollama local
 | `PORT` | `8000` | En Hugging Face Spaces: `7860` |
 | `LLM_PROVIDER` | `gemini` | `gemini` \| `ollama` \| `fake` |
 | `GEMINI_API_KEY` | — | Secreto. Nunca en el repo |
-| `GEMINI_MODEL` | `gemini-3.5-flash-lite` | Modelo Flash con visión vigente. Elegido el 2026-11-26: estable, nivel gratuito de 15 RPM / 50 RPD y probado con la API real. `gemini-3.8-flash` (5 RPM / 20 RPD) respondía 503/504 por saturación |
+| `GEMINI_MODEL` | `gemini-3.5-flash-lite` | Modelo Flash con visión vigente. Elegido el 2026-11-26: estable, nivel gratuito de 15 RPM / 500 RPD y probado con la API real. `gemini-3.8-flash` (5 RPM / 20 RPD) respondía 503/504 por saturación |
 | `GEMINI_TIMEOUT_S` | `60` | Timeout por llamada; un reintento con backoff solo en errores transitorios |
 | `OLLAMA_ENABLED` | `false` | |
 | `OLLAMA_BASE_URL` | `http://ollama:11434` | |
 | `OLLAMA_MODEL` | `qwen2.5vl` | Modelo de visión |
 | `ALLOWED_ORIGINS` | `http://localhost:5173` | CSV, para CORS |
-| `RATE_LIMIT_EXTRACT` | `10/minute` | |
+| `RATE_LIMIT_EXTRACT` | `10/minute` | Peticiones a `/extract` por IP real (ventana deslizante) |
+| `DAILY_DOCUMENT_LIMIT` | `450` | Documentos/día enviados a Gemini (cuota gratuita: 500 RPD); `0` = sin tope |
 | `LOG_LEVEL` | `INFO` | |
 
 Si `GEMINI_API_KEY` o `GEMINI_MODEL` están vacíos en desarrollo, el proveedor por defecto es `fake` para que todo funcione sin clave.
@@ -224,7 +225,7 @@ Estados: `pendiente` | `en curso` | `hecha`. Añade al final las historias nueva
 | API-INV-0007 | `feat/invoices/api-inv-0007` | hecha |
 | API-INV-0008 | `feat/invoices/api-inv-0008` | hecha |
 | API-INV-0009 | `feat/invoices/api-inv-0009` | hecha |
-| API-COR-0010 | `feat/core/api-cor-0010` | pendiente |
+| API-COR-0010 | `feat/core/api-cor-0010` | hecha |
 | API-EXP-0011 | `feat/export/api-exp-0011` | pendiente |
 | API-EXP-0012 | `feat/export/api-exp-0012` | pendiente |
 | API-INV-0013 | `feat/invoices/api-inv-0013` | pendiente |
@@ -300,7 +301,8 @@ Estados: `pendiente` | `en curso` | `hecha`. Añade al final las historias nueva
 
 ### API-COR-0010 — Límite de peticiones
 *Como dueño del servicio quiero proteger la cuota gratuita de abuso.*
-- slowapi por IP real (con proxy headers) en `/invoices/extract` (`RATE_LIMIT_EXTRACT`).
+- Límite por IP real (con proxy headers) en `/invoices/extract` (`RATE_LIMIT_EXTRACT`), con `limits` (motor de slowapi).
+- Tope diario global de documentos enviados a Gemini (`DAILY_DOCUMENT_LIMIT`), reinicio a medianoche del Pacífico → 503 `LLM_QUOTA_EXCEEDED` con `retry_after_s`.
 - Respuesta 429 `RATE_LIMITED` con `retry_after_s` y header `Retry-After`.
 - Tests.
 

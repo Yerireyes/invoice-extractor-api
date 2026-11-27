@@ -260,7 +260,7 @@ Respuesta 200: archivo binario.
 | `METHOD_NOT_ALLOWED` | 405 | Método HTTP no soportado en esa ruta | `{}` (header `Allow` con los válidos) |
 | `REQUEST_TOO_LARGE` | 413 | El body supera el máximo: 10 MB en endpoints JSON (`/validate`, `/exports/*`); en `/extract` ver sección 2.2 | `{}` |
 | `RATE_LIMITED` | 429 | Demasiadas peticiones por IP | `{ "retry_after_s": 42 }` + header `Retry-After` |
-| `LLM_QUOTA_EXCEEDED` | 503 | Cuota del proveedor agotada | `{}` o `{ "retry_after_s": 30 }` + header `Retry-After` cuando el proveedor indica la espera |
+| `LLM_QUOTA_EXCEEDED` | 503 | Cuota del proveedor agotada, o tope diario del servicio alcanzado (sección 6) | `{}` o `{ "retry_after_s": 30 }` + header `Retry-After` cuando se conoce la espera (con el tope diario, siempre: segundos hasta el reinicio) |
 | `LLM_UNAVAILABLE` | 503 | El proveedor no responde | igual que `LLM_QUOTA_EXCEEDED` |
 | `INTERNAL_ERROR` | 500 | Error inesperado (sin detalles internos) | `{}` |
 
@@ -275,7 +275,8 @@ Esquema OpenAPI: `ProblemDetails`. Todas las respuestas 4xx/5xx se declaran con 
 | Archivos por petición | 10 |
 | Tamaño por archivo | 10 MB |
 | Páginas por PDF | 5 |
-| Extracciones por IP | 10 / minuto |
+| Extracciones por IP | 10 / minuto (ventana deslizante) → 429 `RATE_LIMITED` |
+| Documentos enviados a Gemini al día (global) | 450, reinicio a medianoche del Pacífico → 503 `LLM_QUOTA_EXCEEDED` |
 | Facturas por exportación | 100 |
 | Body JSON (`/validate`, `/exports/*`) | 10 MB |
 | Body de `/extract` | archivos × tamaño + 1 MB |
@@ -326,3 +327,4 @@ Estables: el frontend genera sus tipos a partir de ellos. Un esquema aparece en 
 | 2026-11-25 | API-INV-0007 | `POST /invoices/extract` implementado. Nuevo código HTTP `REQUEST_TOO_LARGE` (413) y límites de body. `provider` admite `fake` y por defecto usa el de `/meta`. Aclaraciones: orden de `results`, `file_name` saneado, detección por contenido, errores del LLM abortan la petición. | Sí (solo añade) |
 | 2026-11-26 | API-INV-0008 | Adaptador Gemini real. `/meta` marca `gemini` como disponible solo con clave y modelo configurados. Sin cambios de esquema. | Sí |
 | 2026-11-26 | API-INV-0009 | Tolerancia de redondeo ±1 en monedas sin decimales (JPY, CLP, KRW...); antes daban `TAX_MISMATCH` falsos. | Sí (menos falsos positivos) |
+| 2026-11-26 | API-COR-0010 | Límite por IP en `/extract` (429 `RATE_LIMITED`) y tope diario global de documentos para Gemini (503 `LLM_QUOTA_EXCEEDED` con `retry_after_s`). Una petición multiarchivo reserva todos sus documentos o se rechaza entera. | Sí |
