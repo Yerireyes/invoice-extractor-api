@@ -309,7 +309,8 @@ def _render_pdf(case: Case, invoice: dict[str, Any], *, ticket: bool) -> bytes:
     labels = LABELS[case.lang]
     output = io.BytesIO()
     width, height = (226.0, 620.0) if ticket else A4  # ticket térmico de 80 mm
-    pdf = canvas.Canvas(output, pagesize=(width, height))
+    # invariant: sin fecha de creación ni ID aleatorio, así cada generación da el mismo PDF
+    pdf = canvas.Canvas(output, pagesize=(width, height), invariant=True)
     margin = 12.0 if ticket else 50.0
     usable = width - 2 * margin
     size = 7.5 if ticket else 10.0
@@ -834,7 +835,9 @@ def generate(cases_dir: Path = CASES_DIR) -> int:
         (folder / file_name).write_bytes(data)
         expected = {"file": file_name, "is_invoice": is_invoice, "invoice": invoice}
         (folder / "expected.json").write_text(
-            json.dumps(expected, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+            json.dumps(expected, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+            newline="\n",
         )
     return len(_cases())
 
