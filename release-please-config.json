@@ -6,7 +6,6 @@
     ".": {
       "release-type": "python",
       "package-name": "invoice-extractor-api",
-      "release-as": "1.0.0",
       "changelog-path": "CHANGELOG.md",
       "pull-request-title-pattern": "chore${scope}: publicar versión ${version}",
       "extra-files": [

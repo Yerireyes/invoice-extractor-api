@@ -232,6 +232,7 @@ Estados: `pendiente` | `en curso` | `hecha`. Añade al final las historias nueva
 | API-INV-0013 | `feat/invoices/api-inv-0013` | hecha |
 | API-DEP-0014 | `chore/deploy/api-dep-0014` | hecha |
 | API-DEP-0015 | `fix/deploy/api-dep-0015` | hecha |
+| API-DEP-0016 | `chore/deploy/api-dep-0016` | en curso |
 
 ### API-COR-0001 — Estructura base del proyecto
 *Como desarrollador quiero un proyecto base funcional para construir sobre él.*
@@ -335,7 +336,6 @@ Estados: `pendiente` | `en curso` | `hecha`. Añade al final las historias nueva
 - `openapi.json` incluye `info.version` (leída del paquete): cuando release-please suba la versión en `pyproject.toml`, el check `export_openapi --check` fallará en su PR. Resolverlo (p. ej. un paso del workflow de release que regenere y commitee `openapi.json` en la rama de release, o actualizar `uv.lock`/`openapi.json` vía `extra-files`).
 - Documentar en el README los pasos manuales del usuario: crear el Space, poner `GEMINI_API_KEY`, `GEMINI_MODEL` y `ALLOWED_ORIGINS` (URL de Vercel) como *secrets* del Space, y `HF_TOKEN` en GitHub.
 - Avisar al frontend por el buzón la URL pública de la API.
-- **Tras publicar v1.0.0**: quitar `"release-as": "1.0.0"` de `release-please-config.json` (solo fuerza la primera versión; si se queda, release-please seguiría proponiendo 1.0.0).
 
 ### API-DEP-0015 — Despliegue en Render
 *Como dueño del proyecto quiero desplegar gratis: Hugging Face ya no permite Spaces Docker en el plan gratuito.*
@@ -343,3 +343,7 @@ Estados: `pendiente` | `en curso` | `hecha`. Añade al final las historias nueva
 - Lanzado a mano sin Render configurado: solo publica la imagen (arranque inicial del servicio).
 - Tags de release `vX.Y.Z` (`include-component-in-tag: false`).
 - README con los pasos manuales en Render y GHCR.
+
+### API-DEP-0016 — Versionado normal tras la 1.0.0
+*Como dueño del proyecto quiero que las siguientes versiones se calculen solas a partir de los commits.*
+- Quitar `release-as` de `release-please-config.json` (solo forzaba la primera versión, v1.0.0, publicada el 2026-11-27 en `https://invoice-extractor-api-latest.onrender.com`).
