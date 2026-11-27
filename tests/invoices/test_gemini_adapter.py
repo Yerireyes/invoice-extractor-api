@@ -10,14 +10,13 @@ from pydantic import SecretStr
 
 from app.core.config import Settings
 from app.core.errors import AppError, ErrorCode
-from app.invoices.adapters.gemini import (
-    GeminiExtractor,
+from app.invoices.adapters.gemini import GeminiExtractor, http_options
+from app.invoices.adapters.llm_output import (
     LlmExtraction,
     LlmFieldConfidence,
     LlmLineItem,
     LlmParty,
     LlmTax,
-    http_options,
     to_extraction_output,
 )
 from app.invoices.adapters.prompts import SYSTEM_PROMPT
