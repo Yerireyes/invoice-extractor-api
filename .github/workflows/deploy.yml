@@ -1,11 +1,14 @@
 name: Deploy
 
 # Producción solo al publicar un release (no en cada push a `main`).
-# Sube la app a un Hugging Face Space (SDK Docker) y espera a que la nueva versión responda.
+# 1. Construye la imagen Docker y la publica en GitHub Container Registry (GHCR).
+# 2. Pide a Render que despliegue esa imagen exacta (por digest) mediante su deploy hook.
+# 3. Espera a que la nueva versión responda (smoke test).
 #
-# Requiere (ver README → Despliegue):
-# - Variable del repositorio `HF_SPACE`: `usuario/nombre` del Space.
-# - Secreto `HF_TOKEN`: token de Hugging Face con permiso de escritura sobre ese Space.
+# Requiere (ver README → Versiones y despliegue):
+# - Secreto `RENDER_DEPLOY_HOOK`: URL del deploy hook del servicio en Render.
+# - Variable `RENDER_URL`: URL pública del servicio (https://<nombre>.onrender.com).
+# Lanzado a mano sin esa configuración, solo publica la imagen (primer paso para crear el servicio).
 
 on:
   release:
@@ -14,104 +17,106 @@ on:
 
 permissions:
   contents: read
+  packages: write # publicar la imagen en GHCR con el GITHUB_TOKEN
 
 concurrency:
   group: deploy-production
   cancel-in-progress: false
 
 env:
-  HF_HUB_VERSION: "2.4.0"
-  SMOKE_TIMEOUT_S: "1200" # el Space reconstruye la imagen Docker: puede tardar varios minutos
+  SMOKE_TIMEOUT_S: "900" # Render descarga la imagen y arranca el servicio (y puede estar dormido)
 
 jobs:
   deploy:
-    name: Hugging Face Space
+    name: Render
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment:
       name: production
-      url: ${{ steps.space.outputs.url }}
+      url: ${{ vars.RENDER_URL }}
     steps:
       - uses: actions/checkout@v7
 
-      - name: Comprobar configuración
-        id: space
+      - name: Versión e imagen
+        id: meta
         env:
-          HF_SPACE: ${{ vars.HF_SPACE }}
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          REPOSITORY: ${{ github.repository }}
         run: |
-          if [[ -z "$HF_SPACE" || -z "$HF_TOKEN" ]]; then
-            echo "::error::Faltan la variable HF_SPACE o el secreto HF_TOKEN (ver README → Despliegue)"
-            exit 1
-          fi
-          # https://<usuario>-<nombre>.hf.space (minúsculas; '/', '.' y '_' pasan a '-')
-          subdomain=$(echo "$HF_SPACE" | tr '[:upper:]' '[:lower:]' | tr '/._' '---')
-          echo "url=https://${subdomain}.hf.space" >> "$GITHUB_OUTPUT"
           version=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
           [[ -n "$version" ]] || { echo "::error::No se pudo leer la versión de pyproject.toml"; exit 1; }
           echo "version=${version}" >> "$GITHUB_OUTPUT"
-          echo "Desplegando ${version} en ${HF_SPACE}"
+          # GHCR exige el nombre en minúsculas
+          echo "image=ghcr.io/${REPOSITORY,,}" >> "$GITHUB_OUTPUT"
 
-      - name: Preparar los archivos del Space
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Construir y publicar la imagen
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}
+            ${{ steps.meta.outputs.image }}:latest
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.version=${{ steps.meta.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Comprobar configuración de Render
+        id: render
         env:
-          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
-          URL: ${{ steps.space.outputs.url }}
-          VERSION: ${{ steps.space.outputs.version }}
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+          URL: ${{ vars.RENDER_URL }}
+          EVENT: ${{ github.event_name }}
         run: |
-          mkdir -p space
-          cp -r app Dockerfile .dockerignore pyproject.toml uv.lock LICENSE space/
-          # Hugging Face enruta el tráfico al puerto 7860 (`app_port`).
-          sed -i 's/^\(\s*\)PORT=8000$/\1PORT=7860/' space/Dockerfile
-          grep -q 'PORT=7860' space/Dockerfile || { echo "::error::No se pudo fijar PORT=7860"; exit 1; }
-          # README del Space (frontmatter de configuración); no sustituye al README de GitHub.
-          cat > space/README.md <<EOF
-          ---
-          title: Invoice Extractor API
-          emoji: 🧾
-          colorFrom: blue
-          colorTo: green
-          sdk: docker
-          app_port: 7860
-          pinned: false
-          license: mit
-          short_description: Extrae datos de facturas con IA y los exporta a Excel y PDF
-          ---
+          if [[ -n "$HOOK" && -n "$URL" ]]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          elif [[ "$EVENT" == "release" ]]; then
+            echo "::error::Faltan el secreto RENDER_DEPLOY_HOOK o la variable RENDER_URL (ver README → Versiones y despliegue)"
+            exit 1
+          else
+            echo "::warning::Imagen publicada, pero Render no está configurado: no se despliega."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          fi
 
-          # Invoice Extractor API ${VERSION}
-
-          API REST que extrae datos de facturas de cualquier país con un LLM de visión, los valida
-          y los exporta a Excel y PDF.
-
-          - Documentación interactiva: ${URL}/docs
-          - Código fuente, contrato y changelog: ${REPO_URL}
-          EOF
-
-      - name: Instalar uv
-        uses: astral-sh/setup-uv@v10.4.0
-
-      - name: Subir al Space
+      - name: Desplegar en Render
+        if: steps.render.outputs.configured == 'true'
         env:
-          HF_SPACE: ${{ vars.HF_SPACE }}
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
-          VERSION: ${{ steps.space.outputs.version }}
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+          IMAGE: ${{ steps.meta.outputs.image }}@${{ steps.build.outputs.digest }}
         run: |
-          uvx --from "huggingface_hub==${HF_HUB_VERSION}" hf upload "$HF_SPACE" space . \
-            --repo-type space \
-            --delete "app/**" \
-            --commit-message "Release v${VERSION}" \
-            --commit-description "${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}"
+          # Se despliega por digest: exactamente la imagen recién construida.
+          img_url=$(jq -rn --arg v "$IMAGE" '$v | @uri')
+          status=$(curl -sS -o response.json -w '%{http_code}' -X POST "${HOOK}&imgURL=${img_url}")
+          if [[ "$status" != 200 && "$status" != 202 ]]; then
+            echo "::error::Render rechazó el deploy (HTTP $status)"
+            exit 1
+          fi
+          echo "Deploy solicitado (HTTP $status): $IMAGE"
 
       - name: Smoke test (espera a la nueva versión)
+        if: steps.render.outputs.configured == 'true'
         env:
-          URL: ${{ steps.space.outputs.url }}
-          VERSION: ${{ steps.space.outputs.version }}
+          URL: ${{ vars.RENDER_URL }}
+          VERSION: ${{ steps.meta.outputs.version }}
         run: |
-          # Mientras se reconstruye, el Space puede seguir sirviendo la versión anterior: se espera
-          # a que /meta anuncie la versión desplegada y /health responda 200.
+          # Mientras despliega, Render sigue sirviendo la versión anterior: se espera a que /meta
+          # anuncie la versión nueva y /health responda 200.
           deadline=$((SECONDS + SMOKE_TIMEOUT_S))
           while (( SECONDS < deadline )); do
-            deployed=$(curl -fsS --max-time 10 "$URL/api/v1/meta" | jq -r '.version' 2>/dev/null || true)
-            if [[ "$deployed" == "$VERSION" ]] && curl -fsS --max-time 10 "$URL/api/v1/health"; then
+            deployed=$(curl -fsS --max-time 30 "$URL/api/v1/meta" | jq -r '.version' 2>/dev/null || true)
+            if [[ "$deployed" == "$VERSION" ]] && curl -fsS --max-time 30 "$URL/api/v1/health"; then
               echo
               echo "OK: $URL responde con la versión $VERSION"
               exit 0
