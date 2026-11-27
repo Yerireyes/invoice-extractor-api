@@ -231,7 +231,7 @@ Estados: `pendiente` | `en curso` | `hecha`. Añade al final las historias nueva
 | API-EXP-0012 | `feat/export/api-exp-0012` | hecha |
 | API-INV-0013 | `feat/invoices/api-inv-0013` | hecha |
 | API-DEP-0014 | `chore/deploy/api-dep-0014` | hecha |
-| API-DEP-0015 | `fix/deploy/api-dep-0015` | en curso |
+| API-DEP-0015 | `fix/deploy/api-dep-0015` | hecha |
 
 ### API-COR-0001 — Estructura base del proyecto
 *Como desarrollador quiero un proyecto base funcional para construir sobre él.*
