@@ -106,7 +106,7 @@ multi-stage, corre con un usuario sin privilegios e incluye un `HEALTHCHECK`.
 | Proveedor | Cuándo | Notas |
 |---|---|---|
 | `gemini` | `GEMINI_API_KEY` y `GEMINI_MODEL` configurados | Nivel gratuito de Google AI Studio. Todas las páginas de un documento van en una sola llamada con salida estructurada. |
-| `ollama` | `OLLAMA_ENABLED=true` | Local y privado (próximamente). |
+| `ollama` | `OLLAMA_ENABLED=true` | Modo privado: un modelo de visión local procesa las facturas y nada sale de tu máquina. `/meta` lo marca disponible solo si Ollama responde y tiene el modelo descargado. |
 | `fake` | Desarrollo sin clave | Determinista, sin red: devuelve facturas de ejemplo. Nunca disponible en producción. |
 
 **Gemini**: crea una clave gratuita en [Google AI Studio](https://aistudio.google.com/apikey) y ponla en `.env`
@@ -118,6 +118,38 @@ en [AI Studio](https://aistudio.google.com/rate-limit). El adaptador usa un esqu
 propio para el LLM (solo strings) y lo convierte al dominio con `Decimal`, normalizando formatos como
 `1.234,50`. Se reintenta una vez ante errores transitorios (5xx, timeout); una cuota agotada responde
 503 `LLM_QUOTA_EXCEEDED` con `Retry-After` cuando Google lo indica.
+
+### Modo privado con Ollama
+
+Usa el mismo prompt y el mismo esquema de salida que Gemini, pero con un modelo que corre en tu
+equipo ([`qwen3-vl:8b`](https://ollama.com/library/qwen3-vl) por defecto, ~6 GB; `qwen3-vl:4b`
+pesa la mitad y es más rápido, con algo menos de precisión).
+
+**Con Docker** (todo en contenedores):
+
+```bash
+# en .env: OLLAMA_ENABLED=true (OLLAMA_BASE_URL=http://ollama:11434 ya es el valor por defecto)
+docker compose --profile ollama up --build
+```
+
+El servicio `ollama-pull` descarga el modelo la primera vez (queda en el volumen `ollama-models`).
+Docker Desktop solo pasa GPUs NVIDIA a los contenedores, así que en Windows/macOS el modelo corre en
+CPU: cuenta con minutos por factura (`OLLAMA_TIMEOUT_S`, 300 s por defecto).
+
+**Con Ollama instalado en el equipo** (aprovecha la GPU, también AMD Radeon y Apple Silicon):
+
+```bash
+ollama pull qwen3-vl:8b
+# en .env: OLLAMA_ENABLED=true y
+#   OLLAMA_BASE_URL=http://localhost:11434           (API con `uv run`)
+#   OLLAMA_BASE_URL=http://host.docker.internal:11434 (API con `docker compose up`)
+```
+
+Prueba real opcional: `uv run pytest -m live tests/invoices/test_ollama_live.py`.
+
+Errores: Ollama caído, sin el modelo o que no responde a tiempo → 503 `LLM_UNAVAILABLE`; pedir
+`provider=ollama` sin `OLLAMA_ENABLED=true` → 422 `PROVIDER_NOT_AVAILABLE`. Ollama no cuenta para
+el tope diario de documentos (no consume cuota).
 
 ## Calidad de extracción
 
@@ -174,7 +206,8 @@ Todas las variables están documentadas en [`.env.example`](.env.example).
 | `GEMINI_TIMEOUT_S` | `60` | Timeout por llamada a Gemini (s) |
 | `OLLAMA_ENABLED` | `false` | Habilita el proveedor local |
 | `OLLAMA_BASE_URL` | `http://ollama:11434` | URL de Ollama |
-| `OLLAMA_MODEL` | `qwen2.5vl` | Modelo de visión de Ollama |
+| `OLLAMA_MODEL` | `qwen3-vl:8b` | Modelo de visión de Ollama |
+| `OLLAMA_TIMEOUT_S` | `300` | Timeout por documento con Ollama (s) |
 | `ALLOWED_ORIGINS` | `http://localhost:5173` | Orígenes CORS (separados por comas) |
 | `RATE_LIMIT_EXTRACT` | `10/minute` | Límite de extracciones por IP (ventana deslizante) |
 | `DAILY_DOCUMENT_LIMIT` | `450` | Documentos/día enviados a Gemini; `0` = sin tope |

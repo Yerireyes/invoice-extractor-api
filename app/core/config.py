@@ -28,7 +28,9 @@ class Settings(BaseSettings):
     gemini_timeout_s: float = Field(default=60, gt=0)
     ollama_enabled: bool = False
     ollama_base_url: str = "http://ollama:11434"
-    ollama_model: str = "qwen2.5vl"
+    ollama_model: str = "qwen3-vl:8b"
+    ollama_timeout_s: float = Field(default=300, gt=0)
+    """En CPU un modelo de visión local puede tardar minutos por documento."""
 
     # HTTP
     allowed_origins: Annotated[list[str], NoDecode] = ["http://localhost:5173"]

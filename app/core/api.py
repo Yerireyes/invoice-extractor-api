@@ -7,6 +7,7 @@ from pydantic import BaseModel
 
 from app.core.config import Settings, get_settings
 from app.core.meta import MetaResponse, build_meta
+from app.invoices.providers import get_ollama_available
 
 router = APIRouter(tags=["service"])
 
@@ -21,5 +22,8 @@ def health() -> HealthResponse:
 
 
 @router.get("/meta", summary="Límites, formatos aceptados, proveedores e idiomas de exportación")
-def meta(settings: Annotated[Settings, Depends(get_settings)]) -> MetaResponse:
-    return build_meta(settings)
+async def meta(
+    settings: Annotated[Settings, Depends(get_settings)],
+    ollama_available: Annotated[bool, Depends(get_ollama_available)],
+) -> MetaResponse:
+    return build_meta(settings, ollama_available=ollama_available)

@@ -29,7 +29,7 @@ class MetaResponse(BaseModel):
     export_languages: list[ExportLanguage]
 
 
-def _providers(settings: Settings) -> list[ProviderInfo]:
+def _providers(settings: Settings, *, ollama_available: bool) -> list[ProviderInfo]:
     default = settings.llm_provider
     providers = [
         ProviderInfo(
@@ -37,7 +37,7 @@ def _providers(settings: Settings) -> list[ProviderInfo]:
             available=settings.gemini_configured,
             default=default == "gemini",
         ),
-        ProviderInfo(id="ollama", available=settings.ollama_enabled, default=default == "ollama"),
+        ProviderInfo(id="ollama", available=ollama_available, default=default == "ollama"),
     ]
     # El extractor falso solo se anuncia cuando está activo (desarrollo sin clave de Gemini).
     if default == "fake":
@@ -45,7 +45,7 @@ def _providers(settings: Settings) -> list[ProviderInfo]:
     return providers
 
 
-def build_meta(settings: Settings) -> MetaResponse:
+def build_meta(settings: Settings, *, ollama_available: bool = False) -> MetaResponse:
     return MetaResponse(
         version=APP_VERSION,
         limits=Limits(
@@ -55,6 +55,6 @@ def build_meta(settings: Settings) -> MetaResponse:
             max_invoices_per_export=settings.max_invoices_per_export,
         ),
         accepted_mime_types=list(ACCEPTED_MIME_TYPES),
-        providers=_providers(settings),
+        providers=_providers(settings, ollama_available=ollama_available),
         export_languages=list(EXPORT_LANGUAGES),
     )
