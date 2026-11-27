@@ -52,6 +52,7 @@
 - `version`: versión semver del servicio desplegado (no la del contrato).
 - `limits`: valores configurados en el servidor; el frontend debe usarlos en lugar de constantes propias.
 - `providers[].id`: `gemini` | `ollama` | `fake`. Exactamente un proveedor tiene `default: true`.
+- `providers[].available`: el proveedor está configurado y puede usarse ahora (`gemini`: clave **y** modelo configurados).
   - `fake` es un extractor **determinista de desarrollo** que devuelve datos de ejemplo. Solo aparece (primero y como `default`) cuando el servidor corre sin clave de Gemini en desarrollo; **nunca en producción**. El frontend debería indicar que los datos no son reales.
 
 ### 2.2 `POST /api/v1/invoices/extract`
@@ -323,3 +324,4 @@ Estables: el frontend genera sus tipos a partir de ellos. Un esquema aparece en 
 | 2026-11-25 | API-INV-0004 | `params` documentados para todos los códigos de error HTTP y por archivo (`max_invoices`, `provider`, `max_mb`, `max_pages`/`pages`, `mime_type`, `retry_after_s` opcional en errores del LLM). | Sí |
 | 2026-11-25 | API-INV-0005 | `POST /invoices/validate` implementado. Convenciones de validación: `discount` nulo = 0, `field` como ruta, `line`/`index` 0-based, `expected` redondeado a 2 decimales, margen de 1 día en `FUTURE_DATE`, orden de `issues`. | Sí |
 | 2026-11-25 | API-INV-0007 | `POST /invoices/extract` implementado. Nuevo código HTTP `REQUEST_TOO_LARGE` (413) y límites de body. `provider` admite `fake` y por defecto usa el de `/meta`. Aclaraciones: orden de `results`, `file_name` saneado, detección por contenido, errores del LLM abortan la petición. | Sí (solo añade) |
+| 2026-11-26 | API-INV-0008 | Adaptador Gemini real. `/meta` marca `gemini` como disponible solo con clave y modelo configurados. Sin cambios de esquema. | Sí |

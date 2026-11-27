@@ -24,6 +24,7 @@ class Settings(BaseSettings):
     llm_provider: LLMProvider = "gemini"
     gemini_api_key: SecretStr = SecretStr("")
     gemini_model: str = ""
+    gemini_timeout_s: float = Field(default=60, gt=0)
     ollama_enabled: bool = False
     ollama_base_url: str = "http://ollama:11434"
     ollama_model: str = "qwen2.5vl"
@@ -45,13 +46,18 @@ class Settings(BaseSettings):
             return [origin.strip() for origin in value.split(",") if origin.strip()]
         return value
 
+    @property
+    def gemini_configured(self) -> bool:
+        """Hay clave y modelo de Gemini (sin ambos, el proveedor no está disponible)."""
+        return bool(self.gemini_api_key.get_secret_value() and self.gemini_model.strip())
+
     @model_validator(mode="after")
     def _fallback_to_fake_provider(self) -> Self:
-        """Sin clave de Gemini en desarrollo se usa el extractor falso (no depende de la API)."""
+        """Sin clave o modelo de Gemini, en desarrollo se usa el extractor falso."""
         if (
             self.app_env == "development"
             and self.llm_provider == "gemini"
-            and not self.gemini_api_key.get_secret_value()
+            and not self.gemini_configured
         ):
             self.llm_provider = "fake"
         return self

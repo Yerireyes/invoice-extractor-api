@@ -59,7 +59,9 @@ def test_meta_lists_fake_provider_when_active() -> None:
 
 
 def test_meta_with_gemini_key_has_gemini_as_default() -> None:
-    settings = Settings(_env_file=None, llm_provider="gemini", gemini_api_key=SecretStr("clave"))
+    settings = Settings(
+        _env_file=None, llm_provider="gemini", gemini_api_key=SecretStr("clave"), gemini_model="m"
+    )
 
     providers = _get_meta(settings)["providers"]
 

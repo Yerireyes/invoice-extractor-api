@@ -668,6 +668,7 @@ source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
     { name = "google-genai" },
+    { name = "httpx2" },
     { name = "ollama" },
     { name = "openpyxl" },
     { name = "pillow" },
@@ -694,6 +695,7 @@ dev = [
 requires-dist = [
     { name = "fastapi", specifier = ">=0.165.0" },
     { name = "google-genai", specifier = ">=3.6.1" },
+    { name = "httpx2", specifier = ">=2.16.2" },
     { name = "ollama", specifier = ">=0.6.3" },
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "pillow", specifier = ">=13.0.0" },

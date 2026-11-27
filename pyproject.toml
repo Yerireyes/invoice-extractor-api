@@ -10,6 +10,7 @@ requires-python = ">=3.14"
 dependencies = [
     "fastapi>=0.165.0",
     "google-genai>=3.6.1",
+    "httpx2>=2.16.2",
     "ollama>=0.6.3",
     "openpyxl>=3.1.5",
     "pillow>=13.0.0",
