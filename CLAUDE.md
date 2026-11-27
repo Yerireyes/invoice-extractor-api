@@ -159,7 +159,8 @@ docker compose --profile ollama up        # API + Ollama local
 | `PORT` | `8000` | En Hugging Face Spaces: `7860` |
 | `LLM_PROVIDER` | `gemini` | `gemini` \| `ollama` \| `fake` |
 | `GEMINI_API_KEY` | — | Secreto. Nunca en el repo |
-| `GEMINI_MODEL` | — | Modelo Flash con visión vigente |
+| `GEMINI_MODEL` | `gemini-3.8-flash` | Modelo Flash con visión vigente (verificado 2026-11-26: estable y con nivel gratuito) |
+| `GEMINI_TIMEOUT_S` | `60` | Timeout por llamada; un reintento con backoff solo en errores transitorios |
 | `OLLAMA_ENABLED` | `false` | |
 | `OLLAMA_BASE_URL` | `http://ollama:11434` | |
 | `OLLAMA_MODEL` | `qwen2.5vl` | Modelo de visión |
@@ -167,7 +168,7 @@ docker compose --profile ollama up        # API + Ollama local
 | `RATE_LIMIT_EXTRACT` | `10/minute` | |
 | `LOG_LEVEL` | `INFO` | |
 
-Si `GEMINI_API_KEY` está vacío en desarrollo, el proveedor por defecto es `fake` para que todo funcione sin clave.
+Si `GEMINI_API_KEY` o `GEMINI_MODEL` están vacíos en desarrollo, el proveedor por defecto es `fake` para que todo funcione sin clave.
 
 ## Tests
 
@@ -221,7 +222,7 @@ Estados: `pendiente` | `en curso` | `hecha`. Añade al final las historias nueva
 | API-INV-0005 | `feat/invoices/api-inv-0005` | hecha |
 | API-SHR-0006 | `feat/shared/api-shr-0006` | hecha |
 | API-INV-0007 | `feat/invoices/api-inv-0007` | hecha |
-| API-INV-0008 | `feat/invoices/api-inv-0008` | pendiente |
+| API-INV-0008 | `feat/invoices/api-inv-0008` | en curso |
 | API-INV-0009 | `feat/invoices/api-inv-0009` | pendiente |
 | API-COR-0010 | `feat/core/api-cor-0010` | pendiente |
 | API-EXP-0011 | `feat/export/api-exp-0011` | pendiente |
