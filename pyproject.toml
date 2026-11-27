@@ -1,6 +1,6 @@
 [project]
 name = "invoice-extractor-api"
-version = "0.1.0"
+version = "1.0.0"
 description = "API REST que extrae datos de facturas de cualquier país con un LLM de visión y los exporta a Excel y PDF."
 readme = "README.md"
 authors = [{ name = "Yerireyes" }]

@@ -3,7 +3,7 @@
   "info": {
     "title": "Invoice Extractor API",
     "summary": "Extrae datos de facturas de cualquier país con IA y los exporta a Excel y PDF.",
-    "version": "0.1.0"
+    "version": "1.0.0"
   },
   "paths": {
     "/api/v1/health": {
@@ -96,16 +96,6 @@
               }
             }
           },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
           "413": {
             "description": "Content Too Large",
             "content": {
@@ -118,6 +108,16 @@
           },
           "422": {
             "description": "Unprocessable Content",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -158,16 +158,6 @@
               }
             }
           },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
           "413": {
             "description": "Content Too Large",
             "content": {
@@ -180,6 +170,16 @@
           },
           "422": {
             "description": "Unprocessable Content",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -220,16 +220,6 @@
               }
             }
           },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
           "413": {
             "description": "Content Too Large",
             "content": {
@@ -242,6 +232,16 @@
           },
           "422": {
             "description": "Unprocessable Content",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -280,16 +280,6 @@
               }
             }
           },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/problem+json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemDetails"
-                }
-              }
-            }
-          },
           "413": {
             "description": "Content Too Large",
             "content": {
@@ -312,6 +302,16 @@
           },
           "429": {
             "description": "Too Many Requests",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
             "content": {
               "application/problem+json": {
                 "schema": {
@@ -665,17 +665,17 @@
         "properties": {
           "total": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Total"
           },
           "succeeded": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Succeeded"
           },
           "failed": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Failed"
           }
         },
@@ -721,12 +721,12 @@
           },
           "pages": {
             "type": "integer",
-            "minimum": 1.0,
+            "minimum": 1,
             "title": "Pages"
           },
           "processing_ms": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Processing Ms"
           }
         },
@@ -779,8 +779,8 @@
           "field_confidence": {
             "additionalProperties": {
               "type": "number",
-              "maximum": 1.0,
-              "minimum": 0.0
+              "maximum": 1,
+              "minimum": 0
             },
             "type": "object",
             "title": "Field Confidence",
