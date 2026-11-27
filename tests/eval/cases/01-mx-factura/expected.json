@@ -1,0 +1,55 @@
+{
+  "file": "document.pdf",
+  "is_invoice": true,
+  "invoice": {
+    "document_type": "invoice",
+    "invoice_number": "A-00123",
+    "issue_date": "2026-11-20",
+    "due_date": "2026-12-20",
+    "currency": "MXN",
+    "country": "MX",
+    "language": "es",
+    "issuer": {
+      "name": "Comercial Ejemplo S.A. de C.V.",
+      "tax_id": "CEJ010101AB1",
+      "tax_id_type": "RFC",
+      "address": "Av. Reforma 100, CDMX"
+    },
+    "recipient": {
+      "name": "Cliente Demo S.C.",
+      "tax_id": "CDE020202CD2",
+      "tax_id_type": "RFC",
+      "address": null
+    },
+    "line_items": [
+      {
+        "description": "Servicio de consultoría",
+        "quantity": "2",
+        "unit": "h",
+        "unit_price": "500.00",
+        "discount": null,
+        "amount": "1000.00"
+      },
+      {
+        "description": "Licencia de software",
+        "quantity": "1",
+        "unit": null,
+        "unit_price": "1200.00",
+        "discount": "120.00",
+        "amount": "1080.00"
+      }
+    ],
+    "subtotal": "2080.00",
+    "discount_total": null,
+    "taxes": [
+      {
+        "name": "IVA",
+        "rate": "16",
+        "base": "2080.00",
+        "amount": "332.80"
+      }
+    ],
+    "total": "2412.80",
+    "payment_method": "Transferencia"
+  }
+}

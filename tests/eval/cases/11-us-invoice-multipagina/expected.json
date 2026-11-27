@@ -1,0 +1,183 @@
+{
+  "file": "document.pdf",
+  "is_invoice": true,
+  "invoice": {
+    "document_type": "invoice",
+    "invoice_number": "10045",
+    "issue_date": "2026-02-03",
+    "due_date": "2026-03-05",
+    "currency": "USD",
+    "country": "US",
+    "language": "en",
+    "issuer": {
+      "name": "Example Supplies Inc.",
+      "tax_id": "00-0000000",
+      "tax_id_type": "EIN",
+      "address": "500 Market St, Austin, TX"
+    },
+    "recipient": {
+      "name": "Demo Builders LLC",
+      "tax_id": null,
+      "tax_id_type": null,
+      "address": "Dallas, TX"
+    },
+    "line_items": [
+      {
+        "description": "Item A - parts kit #100",
+        "quantity": "1",
+        "unit": null,
+        "unit_price": "12.50",
+        "discount": null,
+        "amount": "12.50"
+      },
+      {
+        "description": "Item B - parts kit #101",
+        "quantity": "2",
+        "unit": null,
+        "unit_price": "15.50",
+        "discount": null,
+        "amount": "31.00"
+      },
+      {
+        "description": "Item C - parts kit #102",
+        "quantity": "3",
+        "unit": null,
+        "unit_price": "18.50",
+        "discount": null,
+        "amount": "55.50"
+      },
+      {
+        "description": "Item D - parts kit #103",
+        "quantity": "4",
+        "unit": null,
+        "unit_price": "21.50",
+        "discount": null,
+        "amount": "86.00"
+      },
+      {
+        "description": "Item E - parts kit #104",
+        "quantity": "1",
+        "unit": null,
+        "unit_price": "24.50",
+        "discount": null,
+        "amount": "24.50"
+      },
+      {
+        "description": "Item F - parts kit #105",
+        "quantity": "2",
+        "unit": null,
+        "unit_price": "27.50",
+        "discount": null,
+        "amount": "55.00"
+      },
+      {
+        "description": "Item G - parts kit #106",
+        "quantity": "3",
+        "unit": null,
+        "unit_price": "30.50",
+        "discount": null,
+        "amount": "91.50"
+      },
+      {
+        "description": "Item H - parts kit #107",
+        "quantity": "4",
+        "unit": null,
+        "unit_price": "33.50",
+        "discount": null,
+        "amount": "134.00"
+      },
+      {
+        "description": "Item I - parts kit #108",
+        "quantity": "1",
+        "unit": null,
+        "unit_price": "36.50",
+        "discount": null,
+        "amount": "36.50"
+      },
+      {
+        "description": "Item J - parts kit #109",
+        "quantity": "2",
+        "unit": null,
+        "unit_price": "39.50",
+        "discount": null,
+        "amount": "79.00"
+      },
+      {
+        "description": "Item K - parts kit #110",
+        "quantity": "3",
+        "unit": null,
+        "unit_price": "42.50",
+        "discount": null,
+        "amount": "127.50"
+      },
+      {
+        "description": "Item L - parts kit #111",
+        "quantity": "4",
+        "unit": null,
+        "unit_price": "45.50",
+        "discount": null,
+        "amount": "182.00"
+      },
+      {
+        "description": "Item M - parts kit #112",
+        "quantity": "1",
+        "unit": null,
+        "unit_price": "48.50",
+        "discount": null,
+        "amount": "48.50"
+      },
+      {
+        "description": "Item N - parts kit #113",
+        "quantity": "2",
+        "unit": null,
+        "unit_price": "51.50",
+        "discount": null,
+        "amount": "103.00"
+      },
+      {
+        "description": "Item O - parts kit #114",
+        "quantity": "3",
+        "unit": null,
+        "unit_price": "54.50",
+        "discount": null,
+        "amount": "163.50"
+      },
+      {
+        "description": "Item P - parts kit #115",
+        "quantity": "4",
+        "unit": null,
+        "unit_price": "57.50",
+        "discount": null,
+        "amount": "230.00"
+      },
+      {
+        "description": "Item Q - parts kit #116",
+        "quantity": "1",
+        "unit": null,
+        "unit_price": "60.50",
+        "discount": null,
+        "amount": "60.50"
+      },
+      {
+        "description": "Item R - parts kit #117",
+        "quantity": "2",
+        "unit": null,
+        "unit_price": "63.50",
+        "discount": null,
+        "amount": "127.00"
+      }
+    ],
+    "subtotal": "1647.50",
+    "discount_total": null,
+    "taxes": [
+      {
+        "name": "Sales tax",
+        "rate": "8.25",
+        "base": "1647.50",
+        "amount": "135.92"
+      }
+    ],
+    "total": "1783.42",
+    "payment_method": "Net 30"
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "file": "document.jpg",
+  "is_invoice": true,
+  "invoice": {
+    "document_type": "invoice",
+    "invoice_number": "0003-00001234",
+    "issue_date": "2026-07-21",
+    "due_date": null,
+    "currency": "ARS",
+    "country": "AR",
+    "language": "es",
+    "issuer": {
+      "name": "Ejemplo Insumos S.R.L.",
+      "tax_id": "30-00000000-0",
+      "tax_id_type": "CUIT",
+      "address": "Av. Corrientes 1234, CABA"
+    },
+    "recipient": {
+      "name": "Consumidor Final",
+      "tax_id": null,
+      "tax_id_type": null,
+      "address": null
+    },
+    "line_items": [
+      {
+        "description": "Resma papel A4",
+        "quantity": "10",
+        "unit": null,
+        "unit_price": "8500.00",
+        "discount": null,
+        "amount": "85000.00"
+      },
+      {
+        "description": "Tóner impresora",
+        "quantity": "2",
+        "unit": null,
+        "unit_price": "45990.00",
+        "discount": null,
+        "amount": "91980.00"
+      }
+    ],
+    "subtotal": "176980.00",
+    "discount_total": null,
+    "taxes": [
+      {
+        "name": "IVA",
+        "rate": "21",
+        "base": "176980.00",
+        "amount": "37165.80"
+      }
+    ],
+    "total": "214145.80",
+    "payment_method": "Efectivo"
+  }
+}

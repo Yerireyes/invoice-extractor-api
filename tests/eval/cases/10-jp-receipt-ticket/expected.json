@@ -1,0 +1,58 @@
+{
+  "file": "document.png",
+  "is_invoice": true,
+  "invoice": {
+    "document_type": "receipt",
+    "invoice_number": null,
+    "issue_date": "2026-04-18",
+    "due_date": null,
+    "currency": "JPY",
+    "country": "JP",
+    "language": "en",
+    "issuer": {
+      "name": "Sample Mart Shibuya",
+      "tax_id": null,
+      "tax_id_type": null,
+      "address": "Shibuya, Tokyo"
+    },
+    "recipient": null,
+    "line_items": [
+      {
+        "description": "Green tea 500ml",
+        "quantity": "2",
+        "unit": null,
+        "unit_price": "160",
+        "discount": null,
+        "amount": "320"
+      },
+      {
+        "description": "Onigiri salmon",
+        "quantity": "3",
+        "unit": null,
+        "unit_price": "180",
+        "discount": null,
+        "amount": "540"
+      },
+      {
+        "description": "Sandwich",
+        "quantity": "1",
+        "unit": null,
+        "unit_price": "420",
+        "discount": null,
+        "amount": "420"
+      }
+    ],
+    "subtotal": "1280",
+    "discount_total": null,
+    "taxes": [
+      {
+        "name": "Consumption tax",
+        "rate": "8",
+        "base": "1280",
+        "amount": "102"
+      }
+    ],
+    "total": "1382",
+    "payment_method": "Cash"
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "file": "document.pdf",
+  "is_invoice": true,
+  "invoice": {
+    "document_type": "invoice",
+    "invoice_number": "INV-3021",
+    "issue_date": "2026-05-02",
+    "due_date": "2026-06-01",
+    "currency": "GBP",
+    "country": "GB",
+    "language": "en",
+    "issuer": {
+      "name": "Example Studio Ltd",
+      "tax_id": "GB000000000",
+      "tax_id_type": "VAT Reg No",
+      "address": "10 Downing Lane, London"
+    },
+    "recipient": {
+      "name": "Demo Retail plc",
+      "tax_id": null,
+      "tax_id_type": null,
+      "address": "Manchester"
+    },
+    "line_items": [
+      {
+        "description": "Photography session",
+        "quantity": "1",
+        "unit": null,
+        "unit_price": "650.00",
+        "discount": null,
+        "amount": "650.00"
+      },
+      {
+        "description": "Edited images",
+        "quantity": "25",
+        "unit": null,
+        "unit_price": "8.00",
+        "discount": null,
+        "amount": "200.00"
+      }
+    ],
+    "subtotal": "850.00",
+    "discount_total": "50.00",
+    "taxes": [
+      {
+        "name": "VAT",
+        "rate": "20",
+        "base": "800.00",
+        "amount": "160.00"
+      }
+    ],
+    "total": "960.00",
+    "payment_method": "Bank transfer"
+  }
+}

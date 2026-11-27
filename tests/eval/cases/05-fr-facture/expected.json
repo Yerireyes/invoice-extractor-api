@@ -1,0 +1,55 @@
+{
+  "file": "document.pdf",
+  "is_invoice": true,
+  "invoice": {
+    "document_type": "invoice",
+    "invoice_number": "F-2026-112",
+    "issue_date": "2026-09-12",
+    "due_date": "2026-10-12",
+    "currency": "EUR",
+    "country": "FR",
+    "language": "fr",
+    "issuer": {
+      "name": "Exemple Conseil SARL",
+      "tax_id": "FR00000000000",
+      "tax_id_type": "TVA",
+      "address": "12 rue de Rivoli, Paris"
+    },
+    "recipient": {
+      "name": "Client Démo SAS",
+      "tax_id": null,
+      "tax_id_type": null,
+      "address": "Lyon"
+    },
+    "line_items": [
+      {
+        "description": "Formation équipe (journée)",
+        "quantity": "3",
+        "unit": null,
+        "unit_price": "980.00",
+        "discount": null,
+        "amount": "2940.00"
+      },
+      {
+        "description": "Support pédagogique",
+        "quantity": "12",
+        "unit": null,
+        "unit_price": "15.00",
+        "discount": null,
+        "amount": "180.00"
+      }
+    ],
+    "subtotal": "3120.00",
+    "discount_total": null,
+    "taxes": [
+      {
+        "name": "TVA",
+        "rate": "20",
+        "base": "3120.00",
+        "amount": "624.00"
+      }
+    ],
+    "total": "3744.00",
+    "payment_method": "Virement"
+  }
+}
