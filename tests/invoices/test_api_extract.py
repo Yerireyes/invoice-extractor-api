@@ -1,4 +1,4 @@
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from datetime import date
 from typing import Any
 
@@ -7,10 +7,13 @@ from fastapi import UploadFile
 from fastapi.testclient import TestClient
 from starlette.formparsers import MultiPartParser
 
-from app.core.config import Settings
-from app.core.errors import PROBLEM_JSON
+from app.core.config import LLMProvider, Settings
+from app.core.errors import PROBLEM_JSON, AppError, ErrorCode
 from app.invoices.api import extract_body_limit, get_today
+from app.invoices.ports import ExtractionOutput
+from app.invoices.providers import get_extractor_factory
 from app.main import create_app
+from app.shared.files import PageImage
 from tests.factories import image_bytes, pdf_bytes
 
 URL = "/api/v1/invoices/extract"
@@ -241,3 +244,46 @@ def test_other_responses_pass_through_middleware(api: TestClient) -> None:
     response = api.get("/api/v1/health")
 
     assert response.json() == {"status": "ok"}
+
+
+class _FailingExtractor:
+    def __init__(self, error: AppError) -> None:
+        self.error = error
+
+    @property
+    def provider(self) -> LLMProvider:
+        return "gemini"
+
+    async def extract(self, pages: Sequence[PageImage]) -> ExtractionOutput:  # noqa: ARG002
+        raise self.error
+
+
+@pytest.mark.parametrize(
+    ("error", "params", "retry_after"),
+    [
+        (AppError(ErrorCode.LLM_UNAVAILABLE), {}, None),
+        (
+            AppError(
+                ErrorCode.LLM_QUOTA_EXCEEDED,
+                params={"retry_after_s": 30},
+                headers={"Retry-After": "30"},
+            ),
+            {"retry_after_s": 30},
+            "30",
+        ),
+    ],
+)
+def test_provider_errors_abort_with_503(
+    settings: Settings, error: AppError, params: dict[str, int], retry_after: str | None
+) -> None:
+    app = create_app(settings)
+    app.dependency_overrides[get_extractor_factory] = lambda: lambda _: _FailingExtractor(error)
+
+    with TestClient(app) as client:
+        response = _post(client, [_upload(image_bytes("PNG")), _upload(image_bytes("JPEG"))])
+
+    assert response.status_code == 503
+    assert response.headers["content-type"] == PROBLEM_JSON
+    assert response.json()["code"] == error.code
+    assert response.json()["params"] == params
+    assert response.headers.get("retry-after") == retry_after
