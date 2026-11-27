@@ -142,6 +142,10 @@ Petición:
 }
 ```
 
+- `invoices`: 1..`max_invoices_per_export` facturas (`TOO_MANY_INVOICES` si se supera; lista vacía → `VALIDATION_ERROR`). Cada una admite además `source_file_name` (string opcional, ≤ 255): el nombre del archivo original de `/extract`, que rellena la columna *Archivo* del Excel.
+- `options` es opcional; por defecto `language: "es"`, `include_line_items: true`, `include_alerts: true`. `language`: `es` | `en`.
+- **La exportación revalida cada factura** (no se envía la validación); estados y alertas salen de ahí.
+
 Respuesta 200: archivo binario.
 - Excel: `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`
 - PDF: `application/pdf`
@@ -293,9 +297,18 @@ Encabezados en el idioma de `options.language`. Cada factura recibe una **Ref** 
 | **Totales por moneda** | moneda | Moneda, Nº facturas, Subtotal, Descuentos, Impuestos, Total — **fórmulas** `COUNTIF`/`SUMIF` sobre *Resumen* |
 | **Alertas** (si `include_alerts`) | issue | Ref, Número factura, Severidad, Código, Campo, Mensaje (traducido) |
 
-\* `Archivo`: el body de exportación no trae el nombre de archivo; la columna queda vacía salvo que en el futuro se añada `source_file_name` opcional a la petición.
+\* `Archivo`: valor de `source_file_name` de cada factura (vacío si no se envía).
 
-Formato: cada hoja es una Tabla de Excel con filtros, encabezado en negrita y congelado, fechas como fechas reales, montos como números `#,##0.00`, anchos ajustados, y formato condicional en *Resumen* (rojo claro = `invalid`, amarillo claro = `warnings`). **Nunca se suman monedas distintas.**
+Nombres de hojas en inglés: *Summary*, *Line items*, *Taxes*, *Totals by currency*, *Alerts*.
+
+Formato: cada hoja es una Tabla de Excel con filtros, encabezado en negrita y congelado, fechas como fechas reales (`aaaa-mm-dd`), montos como números `#,##0.00` (`#,##0` en monedas sin decimales), anchos ajustados, y formato condicional en *Resumen* (rojo claro = `invalid`, amarillo claro = `warnings`). **Nunca se suman monedas distintas.**
+
+Detalles:
+- Ref: `F-001`… (más dígitos si hay más de 999 facturas). `# Línea` empieza en 1.
+- *Impuestos* (columna de *Resumen*): suma de `taxes[].amount` (0 si no hay).
+- Las facturas sin `currency` no aparecen en *Totales por moneda*.
+- Las fórmulas se recalculan al abrir el archivo (Excel, LibreOffice, Google Sheets).
+- Seguridad: los textos se escriben siempre como texto, nunca como fórmula (protección contra inyección de fórmulas).
 
 ## 8. PDF exportado
 
@@ -311,7 +324,7 @@ Estables: el frontend genera sus tipos a partir de ellos. Un esquema aparece en 
 | `Validation`, `Issue` | Validación (sección 4) |
 | `ExtractResponse`, `ExtractionResult` (`ExtractionSuccess` \| `ExtractionFailure`), `FileError`, `ExtractionMeta`, `ExtractSummary` | `/invoices/extract` |
 | `ValidateRequest`, `ValidateResponse` | `/invoices/validate` |
-| `ExportRequest`, `ExportOptions` | `/exports/*` |
+| `ExportRequest`, `ExportOptions`, `ExportInvoice` (`Invoice` + `source_file_name`) | `/exports/*` |
 | `MetaResponse`, `Limits`, `ProviderInfo` | `/meta` |
 | `HealthResponse` | `/health` |
 | `ProblemDetails` | Errores RFC 9457 |
@@ -328,3 +341,4 @@ Estables: el frontend genera sus tipos a partir de ellos. Un esquema aparece en 
 | 2026-11-26 | API-INV-0008 | Adaptador Gemini real. `/meta` marca `gemini` como disponible solo con clave y modelo configurados. Sin cambios de esquema. | Sí |
 | 2026-11-26 | API-INV-0009 | Tolerancia de redondeo ±1 en monedas sin decimales (JPY, CLP, KRW...); antes daban `TAX_MISMATCH` falsos. | Sí (menos falsos positivos) |
 | 2026-11-26 | API-COR-0010 | Límite por IP en `/extract` (429 `RATE_LIMITED`) y tope diario global de documentos para Gemini (503 `LLM_QUOTA_EXCEEDED` con `retry_after_s`). Una petición multiarchivo reserva todos sus documentos o se rechaza entera. | Sí |
+| 2026-11-26 | API-EXP-0011 | `POST /exports/excel` implementado. Nuevo campo opcional `source_file_name` en cada factura exportada (columna *Archivo*). `options` opcional con valores por defecto. La exportación revalida las facturas. | Sí (solo añade) |

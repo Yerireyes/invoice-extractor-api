@@ -60,6 +60,7 @@ dependencias de FastAPI a partir de la configuración.
 | `GET` | `/api/v1/meta` | Límites, formatos aceptados, proveedores de IA e idiomas de exportación |
 | `POST` | `/api/v1/invoices/extract` | Sube 1..10 imágenes o PDF y devuelve las facturas extraídas y validadas (éxito parcial por archivo) |
 | `POST` | `/api/v1/invoices/validate` | Revalida una factura editada: cuadre aritmético (±0.02), campos obligatorios, moneda ISO 4217 y fechas |
+| `POST` | `/api/v1/exports/excel` | Exporta facturas a `.xlsx`: 5 hojas como Tablas de Excel, totales por moneda con fórmulas, alertas traducidas (es/en) |
 
 Los errores siguen [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) (`application/problem+json`)
 con un `code` estable y `params`, para que el cliente traduzca los mensajes:
