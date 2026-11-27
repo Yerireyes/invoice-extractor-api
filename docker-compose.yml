@@ -10,3 +10,34 @@ services:
     ports:
       - "${PORT:-8000}:${PORT:-8000}"
     restart: unless-stopped
+
+  # Modo privado (API-INV-0013): `docker compose --profile ollama up`.
+  # Pon OLLAMA_ENABLED=true en `.env`. Sin GPU NVIDIA corre en CPU (minutos por factura).
+  ollama:
+    image: ollama/ollama:0.40.18
+    profiles: [ollama]
+    volumes:
+      - ollama-models:/root/.ollama
+    ports:
+      - "11434:11434"
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  # Descarga el modelo la primera vez (las siguientes ya está en el volumen y termina al momento).
+  ollama-pull:
+    image: ollama/ollama:0.40.18
+    profiles: [ollama]
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: ["ollama", "pull", "${OLLAMA_MODEL:-qwen3-vl:8b}"]
+    depends_on:
+      ollama:
+        condition: service_healthy
+    restart: "no"
+
+volumes:
+  ollama-models:
