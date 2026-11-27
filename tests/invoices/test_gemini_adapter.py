@@ -2,6 +2,7 @@ from decimal import Decimal
 from typing import Any
 
 import httpx
+import httpx2
 import pytest
 from google.genai import errors as genai_errors
 from google.genai import types
@@ -16,6 +17,7 @@ from app.invoices.adapters.gemini import (
     LlmLineItem,
     LlmParty,
     LlmTax,
+    http_options,
     to_extraction_output,
 )
 from app.invoices.adapters.prompts import SYSTEM_PROMPT
@@ -158,6 +160,7 @@ def test_confidence_is_clamped_and_paths_filtered() -> None:
         LlmFieldConfidence(field="issuer.tax_id", confidence=1.4),
         LlmFieldConfidence(field="line_items.0.amount", confidence=-0.2),
         LlmFieldConfidence(field="DROP TABLE", confidence=0.5),
+        LlmFieldConfidence(field="is_invoice", confidence=1.0),
     ]
 
     output = to_extraction_output(_llm(field_confidence=confidence), model=MODEL)
@@ -275,7 +278,14 @@ async def test_quota_error_without_retry_info() -> None:
 @pytest.mark.anyio
 @pytest.mark.parametrize(
     "transient",
-    [_server_error(503), _server_error(500), httpx.ReadTimeout("t"), httpx.ConnectError("c")],
+    [
+        _server_error(503),
+        _server_error(500),
+        httpx.ReadTimeout("t"),
+        httpx.ConnectError("c"),
+        httpx2.ReadTimeout("t"),
+        httpx2.ConnectError("c"),
+    ],
 )
 async def test_transient_error_is_retried_once(transient: Exception) -> None:
     models = StubModels(transient, OK)
@@ -291,7 +301,9 @@ async def test_transient_error_is_retried_once(transient: Exception) -> None:
 
 @pytest.mark.anyio
 @pytest.mark.parametrize(
-    "transient", [_server_error(503), httpx.ReadTimeout("t")], ids=["server", "timeout"]
+    "transient",
+    [_server_error(503), httpx.ReadTimeout("t"), httpx2.ReadTimeout("t")],
+    ids=["server", "httpx-timeout", "httpx2-timeout"],
 )
 async def test_persistent_transient_error_is_unavailable(transient: Exception) -> None:
     models = StubModels(transient, transient)
@@ -412,3 +424,11 @@ async def test_retry_info_is_found_among_other_details() -> None:
         await _extractor(StubModels(error_body)).extract(PAGES)
 
     assert error.value.params == {"retry_after_s": 7}
+
+
+def test_sdk_retries_are_disabled_and_timeout_is_set() -> None:
+    options = http_options(timeout_s=45)
+
+    assert options.timeout == 45_000
+    assert options.retry_options is not None
+    assert options.retry_options.attempts == 1

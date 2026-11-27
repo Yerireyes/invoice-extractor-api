@@ -6,7 +6,8 @@
   lugar de fallar.
 - Todas las páginas de un documento van en una sola llamada.
 - Un reintento con backoff solo para errores transitorios (5xx, timeout, red). Nunca se reintenta
-  un 429, para no gastar más cuota.
+  un 429, para no gastar más cuota. El reintento propio del SDK (hasta 5 intentos, 429 incluido)
+  se desactiva para que esta sea la única política.
 - Privacidad: no se registran ni el contenido enviado ni la respuesta; solo metadatos.
 """
 
@@ -21,6 +22,7 @@ from decimal import Decimal, InvalidOperation
 from typing import Any, Literal, Protocol
 
 import httpx
+import httpx2
 from google import genai
 from google.genai import errors as genai_errors
 from google.genai import types
@@ -36,6 +38,13 @@ from app.shared.files import PageImage
 logger = logging.getLogger(__name__)
 
 TRANSIENT_STATUS_CODES = frozenset({500, 502, 503, 504})
+NETWORK_ERRORS = (
+    httpx.TimeoutException,
+    httpx.NetworkError,
+    httpx2.TimeoutException,
+    httpx2.NetworkError,
+)
+"""El SDK usa `httpx2`; se incluye `httpx` por si un transporte personalizado lo usa."""
 RETRY_BASE_DELAY_S = 1.0
 MAX_OUTPUT_TOKENS = 16_384
 
@@ -239,6 +248,7 @@ def _confidence(items: Sequence[LlmFieldConfidence]) -> dict[str, float]:
         item.field: min(max(item.confidence, 0.0), 1.0)
         for item in items
         if _FIELD_PATH_RE.fullmatch(item.field)
+        and item.field.split(".", 1)[0] in Invoice.model_fields
     }
 
 
@@ -254,6 +264,13 @@ class AsyncModels(Protocol):
 
 
 type Sleep = Callable[[float], Awaitable[None]]
+
+
+def http_options(timeout_s: float) -> types.HttpOptions:
+    """Timeout por llamada y reintentos del SDK desactivados (`attempts=1`)."""
+    return types.HttpOptions(
+        timeout=int(timeout_s * 1000), retry_options=types.HttpRetryOptions(attempts=1)
+    )
 
 
 class GeminiExtractor:
@@ -272,9 +289,7 @@ class GeminiExtractor:
 
     @classmethod
     def from_api_key(cls, api_key: str, *, model: str, timeout_s: float) -> GeminiExtractor:
-        client = genai.Client(
-            api_key=api_key, http_options=types.HttpOptions(timeout=int(timeout_s * 1000))
-        )
+        client = genai.Client(api_key=api_key, http_options=http_options(timeout_s))
         return cls(client.aio.models, model=model)
 
     @property
@@ -319,7 +334,7 @@ class GeminiExtractor:
 def _is_transient(exc: Exception) -> bool:
     if isinstance(exc, genai_errors.APIError):
         return exc.code in TRANSIENT_STATUS_CODES
-    return isinstance(exc, httpx.TimeoutException | httpx.NetworkError)
+    return isinstance(exc, NETWORK_ERRORS)
 
 
 def _map_error(exc: Exception) -> Exception:
@@ -335,7 +350,7 @@ def _map_error(exc: Exception) -> Exception:
             return ExtractionFailedError()
         logger.error("Gemini no disponible (%s %s)", exc.code, exc.status)
         return AppError(ErrorCode.LLM_UNAVAILABLE)
-    if isinstance(exc, httpx.TimeoutException | httpx.NetworkError):
+    if isinstance(exc, NETWORK_ERRORS):
         logger.error("Gemini no responde (%s)", type(exc).__name__)
         return AppError(ErrorCode.LLM_UNAVAILABLE)
     return exc
