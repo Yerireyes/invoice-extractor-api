@@ -1,0 +1,123 @@
+name: Deploy
+
+# Producción solo al publicar un release (no en cada push a `main`).
+# Sube la app a un Hugging Face Space (SDK Docker) y espera a que la nueva versión responda.
+#
+# Requiere (ver README → Despliegue):
+# - Variable del repositorio `HF_SPACE`: `usuario/nombre` del Space.
+# - Secreto `HF_TOKEN`: token de Hugging Face con permiso de escritura sobre ese Space.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+env:
+  HF_HUB_VERSION: "2.4.0"
+  SMOKE_TIMEOUT_S: "1200" # el Space reconstruye la imagen Docker: puede tardar varios minutos
+
+jobs:
+  deploy:
+    name: Hugging Face Space
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: production
+      url: ${{ steps.space.outputs.url }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Comprobar configuración
+        id: space
+        env:
+          HF_SPACE: ${{ vars.HF_SPACE }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          if [[ -z "$HF_SPACE" || -z "$HF_TOKEN" ]]; then
+            echo "::error::Faltan la variable HF_SPACE o el secreto HF_TOKEN (ver README → Despliegue)"
+            exit 1
+          fi
+          # https://<usuario>-<nombre>.hf.space (minúsculas; '/', '.' y '_' pasan a '-')
+          subdomain=$(echo "$HF_SPACE" | tr '[:upper:]' '[:lower:]' | tr '/._' '---')
+          echo "url=https://${subdomain}.hf.space" >> "$GITHUB_OUTPUT"
+          version=$(python3 -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
+          [[ -n "$version" ]] || { echo "::error::No se pudo leer la versión de pyproject.toml"; exit 1; }
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
+          echo "Desplegando ${version} en ${HF_SPACE}"
+
+      - name: Preparar los archivos del Space
+        env:
+          REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+          URL: ${{ steps.space.outputs.url }}
+          VERSION: ${{ steps.space.outputs.version }}
+        run: |
+          mkdir -p space
+          cp -r app Dockerfile .dockerignore pyproject.toml uv.lock LICENSE space/
+          # Hugging Face enruta el tráfico al puerto 7860 (`app_port`).
+          sed -i 's/^\(\s*\)PORT=8000$/\1PORT=7860/' space/Dockerfile
+          grep -q 'PORT=7860' space/Dockerfile || { echo "::error::No se pudo fijar PORT=7860"; exit 1; }
+          # README del Space (frontmatter de configuración); no sustituye al README de GitHub.
+          cat > space/README.md <<EOF
+          ---
+          title: Invoice Extractor API
+          emoji: 🧾
+          colorFrom: blue
+          colorTo: green
+          sdk: docker
+          app_port: 7860
+          pinned: false
+          license: mit
+          short_description: Extrae datos de facturas con IA y los exporta a Excel y PDF
+          ---
+
+          # Invoice Extractor API ${VERSION}
+
+          API REST que extrae datos de facturas de cualquier país con un LLM de visión, los valida
+          y los exporta a Excel y PDF.
+
+          - Documentación interactiva: ${URL}/docs
+          - Código fuente, contrato y changelog: ${REPO_URL}
+          EOF
+
+      - name: Instalar uv
+        uses: astral-sh/setup-uv@v10.4.0
+
+      - name: Subir al Space
+        env:
+          HF_SPACE: ${{ vars.HF_SPACE }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          VERSION: ${{ steps.space.outputs.version }}
+        run: |
+          uvx --from "huggingface_hub==${HF_HUB_VERSION}" hf upload "$HF_SPACE" space . \
+            --repo-type space \
+            --delete "app/**" \
+            --commit-message "Release v${VERSION}" \
+            --commit-description "${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }}"
+
+      - name: Smoke test (espera a la nueva versión)
+        env:
+          URL: ${{ steps.space.outputs.url }}
+          VERSION: ${{ steps.space.outputs.version }}
+        run: |
+          # Mientras se reconstruye, el Space puede seguir sirviendo la versión anterior: se espera
+          # a que /meta anuncie la versión desplegada y /health responda 200.
+          deadline=$((SECONDS + SMOKE_TIMEOUT_S))
+          while (( SECONDS < deadline )); do
+            deployed=$(curl -fsS --max-time 10 "$URL/api/v1/meta" | jq -r '.version' 2>/dev/null || true)
+            if [[ "$deployed" == "$VERSION" ]] && curl -fsS --max-time 10 "$URL/api/v1/health"; then
+              echo
+              echo "OK: $URL responde con la versión $VERSION"
+              exit 0
+            fi
+            echo "Esperando a $VERSION (ahora: ${deployed:-sin respuesta})..."
+            sleep 20
+          done
+          echo "::error::$URL no respondió con la versión $VERSION en ${SMOKE_TIMEOUT_S} s"
+          exit 1
