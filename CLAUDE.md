@@ -163,7 +163,8 @@ docker compose --profile ollama up        # API + Ollama local
 | `GEMINI_TIMEOUT_S` | `60` | Timeout por llamada; un reintento con backoff solo en errores transitorios |
 | `OLLAMA_ENABLED` | `false` | |
 | `OLLAMA_BASE_URL` | `http://ollama:11434` | |
-| `OLLAMA_MODEL` | `qwen2.5vl` | Modelo de visión |
+| `OLLAMA_MODEL` | `qwen3-vl:8b` | Modelo de visión. Elegido el 2026-11-27 (generación más reciente; `qwen3-vl:4b` en equipos modestos) |
+| `OLLAMA_TIMEOUT_S` | `300` | Timeout por documento (en CPU un modelo local tarda minutos) |
 | `ALLOWED_ORIGINS` | `http://localhost:5173` | CSV, para CORS |
 | `RATE_LIMIT_EXTRACT` | `10/minute` | Peticiones a `/extract` por IP real (ventana deslizante) |
 | `DAILY_DOCUMENT_LIMIT` | `450` | Documentos/día enviados a Gemini (cuota gratuita: 500 RPD); `0` = sin tope |
@@ -228,7 +229,7 @@ Estados: `pendiente` | `en curso` | `hecha`. Añade al final las historias nueva
 | API-COR-0010 | `feat/core/api-cor-0010` | hecha |
 | API-EXP-0011 | `feat/export/api-exp-0011` | hecha |
 | API-EXP-0012 | `feat/export/api-exp-0012` | hecha |
-| API-INV-0013 | `feat/invoices/api-inv-0013` | pendiente |
+| API-INV-0013 | `feat/invoices/api-inv-0013` | en curso |
 | API-DEP-0014 | `chore/deploy/api-dep-0014` | pendiente |
 
 ### API-COR-0001 — Estructura base del proyecto

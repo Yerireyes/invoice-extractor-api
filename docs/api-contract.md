@@ -53,6 +53,7 @@
 - `limits`: valores configurados en el servidor; el frontend debe usarlos en lugar de constantes propias.
 - `providers[].id`: `gemini` | `ollama` | `fake`. Exactamente un proveedor tiene `default: true`.
 - `providers[].available`: el proveedor está configurado y puede usarse ahora (`gemini`: clave **y** modelo configurados).
+  - `ollama` (modo privado, modelo local): `true` solo si está habilitado en el servidor **y** Ollama responde con el modelo descargado (comprobación cacheada ~30 s). Si se pide estando habilitado pero caído → 503 `LLM_UNAVAILABLE`; si no está habilitado → 422 `PROVIDER_NOT_AVAILABLE`. Puede tardar minutos por documento (sin GPU): conviene avisar al usuario y no cortar la petición antes de ~5 min por archivo.
   - `fake` es un extractor **determinista de desarrollo** que devuelve datos de ejemplo. Solo aparece (primero y como `default`) cuando el servidor corre sin clave de Gemini en desarrollo; **nunca en producción**. El frontend debería indicar que los datos no son reales.
 
 ### 2.2 `POST /api/v1/invoices/extract`
@@ -352,3 +353,4 @@ Estables: el frontend genera sus tipos a partir de ellos. Un esquema aparece en 
 | 2026-11-26 | API-COR-0010 | Límite por IP en `/extract` (429 `RATE_LIMITED`) y tope diario global de documentos para Gemini (503 `LLM_QUOTA_EXCEEDED` con `retry_after_s`). Una petición multiarchivo reserva todos sus documentos o se rechaza entera. | Sí |
 | 2026-11-26 | API-EXP-0011 | `POST /exports/excel` implementado. Nuevo campo opcional `source_file_name` en cada factura exportada (columna *Archivo*). `options` opcional con valores por defecto. La exportación revalida las facturas. | Sí (solo añade) |
 | 2026-11-27 | API-EXP-0012 | `POST /exports/pdf` implementado. Sección 8 detallada: cada factura empieza en página nueva y puede ocupar varias, pie con fecha y paginación, fuente sin soporte CJK. | Sí (solo añade) |
+| 2026-11-27 | API-INV-0013 | Proveedor `ollama` implementado. `providers[].available` de `ollama` refleja la disponibilidad real (habilitado, responde y modelo descargado). Sin cambios de esquema. | Sí |
