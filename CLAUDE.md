@@ -125,7 +125,7 @@ Formato: `<tipo>(<modulo>): <descripción en español, minúscula, imperativo o 
 ### Pull requests
 
 - Al terminar una historia: `git push -u origin <rama>` y abre un PR con `gh pr create`.
-- Título: `[API-INV-0005] feat(invoices): validación aritmética`
+- Título: `feat(invoices): validación aritmética [API-INV-0005]`. Debe **empezar** por el tipo (Conventional Commits): release-please calcula la versión y el CHANGELOG a partir de él. El ID de la historia va al final. Al hacer squash, `gh` añade ` (#N)`.
 - Cuerpo: qué se hizo, criterios de aceptación marcados, cómo probarlo, cambios de contrato (si los hay).
 - **No hagas merge sin la aprobación del usuario.** Tras el merge: `git checkout main && git pull`, borra la rama local y marca la historia como `hecha` en el Backlog.
 - Merge con **squash** (el título del PR queda como commit en `main`).
@@ -230,7 +230,7 @@ Estados: `pendiente` | `en curso` | `hecha`. Añade al final las historias nueva
 | API-EXP-0011 | `feat/export/api-exp-0011` | hecha |
 | API-EXP-0012 | `feat/export/api-exp-0012` | hecha |
 | API-INV-0013 | `feat/invoices/api-inv-0013` | hecha |
-| API-DEP-0014 | `chore/deploy/api-dep-0014` | pendiente |
+| API-DEP-0014 | `chore/deploy/api-dep-0014` | en curso |
 
 ### API-COR-0001 — Estructura base del proyecto
 *Como desarrollador quiero un proyecto base funcional para construir sobre él.*
@@ -334,3 +334,4 @@ Estados: `pendiente` | `en curso` | `hecha`. Añade al final las historias nueva
 - `openapi.json` incluye `info.version` (leída del paquete): cuando release-please suba la versión en `pyproject.toml`, el check `export_openapi --check` fallará en su PR. Resolverlo (p. ej. un paso del workflow de release que regenere y commitee `openapi.json` en la rama de release, o actualizar `uv.lock`/`openapi.json` vía `extra-files`).
 - Documentar en el README los pasos manuales del usuario: crear el Space, poner `GEMINI_API_KEY`, `GEMINI_MODEL` y `ALLOWED_ORIGINS` (URL de Vercel) como *secrets* del Space, y `HF_TOKEN` en GitHub.
 - Avisar al frontend por el buzón la URL pública de la API.
+- **Tras publicar v1.0.0**: quitar `"release-as": "1.0.0"` de `release-please-config.json` (solo fuerza la primera versión; si se queda, release-please seguiría proponiendo 1.0.0).
