@@ -61,7 +61,7 @@ Petición `multipart/form-data`:
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
 | `files` | archivo[] | sí | 1..`max_files_per_request` |
-| `provider` | string | no | `gemini` (por defecto) \| `ollama` |
+| `provider` | string | no | `gemini` \| `ollama` \| `fake`. Si se omite, se usa el proveedor `default` de `/meta`. Uno no disponible → 422 `PROVIDER_NOT_AVAILABLE` |
 
 Respuesta `200` (éxito parcial permitido; cada resultado tiene su `status`):
 
@@ -112,6 +112,11 @@ Respuesta `200` (éxito parcial permitido; cada resultado tiene su `status`):
 | `NOT_AN_INVOICE` | La IA determina que no es una factura | `{}` |
 | `EXTRACTION_FAILED` | La IA no devolvió un resultado utilizable | `{}` |
 - Si **toda** la petición es inválida (p. ej. demasiados archivos) → error HTTP (sección 5).
+- `results` conserva el **orden** de los archivos enviados.
+- `file_name`: solo el nombre base enviado por el cliente (sin rutas), máx. 255 caracteres; `archivo-N` si viene vacío.
+- El tipo se detecta por el **contenido**; la extensión y el MIME declarado se ignoran.
+- Los errores del proveedor de IA (`LLM_QUOTA_EXCEEDED`, `LLM_UNAVAILABLE`) abortan **toda** la petición (503), no se reportan por archivo.
+- Tamaño máximo del body: `max_files_per_request × max_file_size_mb` + 1 MB (111 MB con los límites v1). Si se supera → 413 `REQUEST_TOO_LARGE` (sin resultados por archivo). Un archivo individual por encima de `max_file_size_mb` dentro de ese margen → `FILE_TOO_LARGE` por archivo.
 
 ### 2.3 `POST /api/v1/invoices/validate`
 
@@ -252,6 +257,7 @@ Respuesta 200: archivo binario.
 | `PROVIDER_NOT_AVAILABLE` | 422 | Se pidió un proveedor deshabilitado | `{ "provider": "ollama" }` |
 | `NOT_FOUND` | 404 | La ruta no existe | `{}` |
 | `METHOD_NOT_ALLOWED` | 405 | Método HTTP no soportado en esa ruta | `{}` (header `Allow` con los válidos) |
+| `REQUEST_TOO_LARGE` | 413 | El body supera el máximo: 10 MB en endpoints JSON (`/validate`, `/exports/*`); en `/extract` ver sección 2.2 | `{}` |
 | `RATE_LIMITED` | 429 | Demasiadas peticiones por IP | `{ "retry_after_s": 42 }` + header `Retry-After` |
 | `LLM_QUOTA_EXCEEDED` | 503 | Cuota del proveedor agotada | `{}` o `{ "retry_after_s": 30 }` + header `Retry-After` cuando el proveedor indica la espera |
 | `LLM_UNAVAILABLE` | 503 | El proveedor no responde | igual que `LLM_QUOTA_EXCEEDED` |
@@ -270,6 +276,8 @@ Esquema OpenAPI: `ProblemDetails`. Todas las respuestas 4xx/5xx se declaran con 
 | Páginas por PDF | 5 |
 | Extracciones por IP | 10 / minuto |
 | Facturas por exportación | 100 |
+| Body JSON (`/validate`, `/exports/*`) | 10 MB |
+| Body de `/extract` | archivos × tamaño + 1 MB |
 
 ## 7. Excel exportado
 
@@ -314,3 +322,4 @@ Estables: el frontend genera sus tipos a partir de ellos. Un esquema aparece en 
 | 2026-11-25 | API-INV-0004 | Esquema de error renombrado `ProblemDetail` → `ProblemDetails` (solo afecta a nombres de tipos generados). `ExtractionResult` como unión discriminada por `status`. Aclarado que los campos "OBLIGATORIO" admiten `null` y generan `MISSING_REQUIRED_FIELD`. Formato decimal exacto (solo strings). Nueva sección 9 con los nombres de esquemas. | Sí (el renombrado no cambia el JSON) |
 | 2026-11-25 | API-INV-0004 | `params` documentados para todos los códigos de error HTTP y por archivo (`max_invoices`, `provider`, `max_mb`, `max_pages`/`pages`, `mime_type`, `retry_after_s` opcional en errores del LLM). | Sí |
 | 2026-11-25 | API-INV-0005 | `POST /invoices/validate` implementado. Convenciones de validación: `discount` nulo = 0, `field` como ruta, `line`/`index` 0-based, `expected` redondeado a 2 decimales, margen de 1 día en `FUTURE_DATE`, orden de `issues`. | Sí |
+| 2026-11-25 | API-INV-0007 | `POST /invoices/extract` implementado. Nuevo código HTTP `REQUEST_TOO_LARGE` (413) y límites de body. `provider` admite `fake` y por defecto usa el de `/meta`. Aclaraciones: orden de `results`, `file_name` saneado, detección por contenido, errores del LLM abortan la petición. | Sí (solo añade) |

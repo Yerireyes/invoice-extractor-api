@@ -18,7 +18,8 @@ LLM de visión, valida que los números cuadren y los exporta a **Excel** y **PD
 - Exportación a Excel (tablas, fórmulas por moneda, formato condicional) y a PDF.
 - Proveedores de IA intercambiables: **Gemini** (nube, nivel gratuito), **Ollama** (local,
   privado) y un extractor **falso** determinista para desarrollo sin clave.
-- Privacidad: los archivos se procesan en memoria y nunca se guardan ni se registran.
+- Privacidad: los archivos se procesan en memoria (ni siquiera los temporales de subida tocan el
+  disco), se reescriben sin metadatos EXIF/GPS y su contenido nunca se registra en los logs.
 
 ## Stack
 
@@ -57,6 +58,7 @@ dependencias de FastAPI a partir de la configuración.
 |---|---|---|
 | `GET` | `/api/v1/health` | Comprobación de salud |
 | `GET` | `/api/v1/meta` | Límites, formatos aceptados, proveedores de IA e idiomas de exportación |
+| `POST` | `/api/v1/invoices/extract` | Sube 1..10 imágenes o PDF y devuelve las facturas extraídas y validadas (éxito parcial por archivo) |
 | `POST` | `/api/v1/invoices/validate` | Revalida una factura editada: cuadre aritmético (±0.02), campos obligatorios, moneda ISO 4217 y fechas |
 
 Los errores siguen [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) (`application/problem+json`)
