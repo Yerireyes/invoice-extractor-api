@@ -34,7 +34,7 @@ def _providers(settings: Settings) -> list[ProviderInfo]:
     providers = [
         ProviderInfo(
             id="gemini",
-            available=bool(settings.gemini_api_key.get_secret_value()),
+            available=settings.gemini_configured,
             default=default == "gemini",
         ),
         ProviderInfo(id="ollama", available=settings.ollama_enabled, default=default == "ollama"),
