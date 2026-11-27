@@ -117,6 +117,34 @@ propio para el LLM (solo strings) y lo convierte al dominio con `Decimal`, norma
 `1.234,50`. Se reintenta una vez ante errores transitorios (5xx, timeout); una cuota agotada responde
 503 `LLM_QUOTA_EXCEEDED` con `Retry-After` cuando Google lo indica.
 
+## Calidad de extracción
+
+`uv run python -m app.scripts.eval` evalúa el proveedor configurado sobre **13 documentos sintéticos**
+([`tests/eval/`](tests/eval/)): 8 países, 7 monedas (MXN, EUR, USD, BRL, ARS, COP, GBP, JPY) y 5 idiomas,
+con facturas en PDF, una foto de móvil simulada (rotada, desenfocada y con sombra), tickets estrechos,
+una factura de 2 páginas, una nota de crédito con importes negativos, una retención de IRPF y una
+imagen que **no** es una factura. Compara 18 campos por documento: textos normalizados, importes
+exactos, fechas, número e importes de líneas e impuestos; inventar un valor donde se espera `null`
+cuenta como error. No corre en el CI porque consume cuota (una petición por documento).
+
+Resultados con `gemini-3.5-flash-lite` (2026-11-26):
+
+| Métrica | Resultado |
+|---|---|
+| Precisión global | **99.5 %** (216/217 campos) |
+| Importes (subtotal, total, impuestos, líneas) | 100 % |
+| Fechas (formatos `dd/mm/aaaa`, `mm/dd/aaaa`, `dd.mm.aaaa`, `02 May 2026`...) | 100 % |
+| Detección de documentos que no son facturas | 100 % |
+| ID fiscal del emisor | 92 % (falló en la foto degradada) |
+| Latencia mediana | 4.5 s por documento |
+
+> Son documentos sintéticos y nítidos: el resultado es una cota superior. Fotos reales con poca luz,
+> arrugas o escritura a mano darán peores cifras; por eso la API devuelve `field_confidence` y la
+> validación aritmética marca lo que no cuadra.
+
+Los documentos se regeneran con `uv run python -m tests.eval.generate` (los importes esperados se
+calculan con `Decimal` y un test verifica que todos cuadran).
+
 ## Configuración
 
 Todas las variables están documentadas en [`.env.example`](.env.example).
@@ -141,6 +169,7 @@ Todas las variables están documentadas en [`.env.example`](.env.example).
 ```bash
 uv run pytest                                  # tests (excluye los marcados como `live`)
 uv run pytest -m live                          # tests contra Gemini real (requiere clave en .env)
+uv run python -m app.scripts.eval              # evaluación de calidad (consume cuota)
 uv run pytest --cov=app --cov-report=term-missing
 uv run ruff check . && uv run ruff format --check .
 uv run mypy

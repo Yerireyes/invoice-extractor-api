@@ -1,0 +1,55 @@
+{
+  "file": "document.pdf",
+  "is_invoice": true,
+  "invoice": {
+    "document_type": "invoice",
+    "invoice_number": "000.451",
+    "issue_date": "2026-08-05",
+    "due_date": null,
+    "currency": "BRL",
+    "country": "BR",
+    "language": "pt",
+    "issuer": {
+      "name": "Exemplo Comércio Ltda.",
+      "tax_id": "00.000.000/0001-00",
+      "tax_id_type": "CNPJ",
+      "address": "Av. Paulista 1000, São Paulo"
+    },
+    "recipient": {
+      "name": "Cliente Demonstração ME",
+      "tax_id": "11.111.111/0001-11",
+      "tax_id_type": "CNPJ",
+      "address": null
+    },
+    "line_items": [
+      {
+        "description": "Cadeira de escritório",
+        "quantity": "5",
+        "unit": null,
+        "unit_price": "389.90",
+        "discount": null,
+        "amount": "1949.50"
+      },
+      {
+        "description": "Mesa de reunião",
+        "quantity": "1",
+        "unit": null,
+        "unit_price": "1450.00",
+        "discount": null,
+        "amount": "1450.00"
+      }
+    ],
+    "subtotal": "3399.50",
+    "discount_total": null,
+    "taxes": [
+      {
+        "name": "ICMS",
+        "rate": "18",
+        "base": "3399.50",
+        "amount": "611.91"
+      }
+    ],
+    "total": "4011.41",
+    "payment_method": "Boleto"
+  }
+}

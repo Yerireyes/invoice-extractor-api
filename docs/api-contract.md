@@ -209,10 +209,10 @@ Respuesta 200: archivo binario.
 `Issue = { "code": string, "severity": "error" | "warning" | "info", "field": string | null, "params": object }`
 
 - `valid`: sin issues. `warnings`: solo warning/info. `invalid`: al menos un error.
-- Tolerancia de redondeo: **±0.02** en la moneda de la factura (una diferencia de exactamente 0.02 es válida).
+- Tolerancia de redondeo: **±0.02** en la moneda de la factura (una diferencia de exactamente 0.02 es válida). En monedas **sin decimales** según ISO 4217 (`JPY`, `CLP`, `KRW`, `VND`, `PYG`, `ISK`, `XAF`, `XOF`...) la tolerancia es **±1**, porque los importes se redondean a la unidad.
 - Las reglas aritméticas solo se aplican si los campos implicados no son `null`. Excepción: `discount_total` y `line_items[].discount` en `null` cuentan como `0`.
 - `field`: ruta del campo afectado (`total`, `issuer.name`, `line_items.1.amount`, `taxes.0.amount`), útil para resaltarlo en el formulario.
-- `params.expected` / `params.actual`: strings decimales. `expected` se redondea a 2 decimales para mostrarlo (la comparación usa el valor exacto).
+- `params.expected` / `params.actual`: strings decimales. `expected` se redondea a 2 decimales (a la unidad en monedas sin decimales) para mostrarlo; la comparación usa el valor exacto.
 - `params.line` / `params.index`: posición **0-based** (igual que en `field`); para mostrar "línea 2" sumad 1.
 - `params.confidence`: número 0..1.
 - `MISSING_REQUIRED_FIELD` aplica a `issue_date`, `currency`, `total` e `issuer.name` (también si `issuer.name` es texto vacío).
@@ -325,3 +325,4 @@ Estables: el frontend genera sus tipos a partir de ellos. Un esquema aparece en 
 | 2026-11-25 | API-INV-0005 | `POST /invoices/validate` implementado. Convenciones de validación: `discount` nulo = 0, `field` como ruta, `line`/`index` 0-based, `expected` redondeado a 2 decimales, margen de 1 día en `FUTURE_DATE`, orden de `issues`. | Sí |
 | 2026-11-25 | API-INV-0007 | `POST /invoices/extract` implementado. Nuevo código HTTP `REQUEST_TOO_LARGE` (413) y límites de body. `provider` admite `fake` y por defecto usa el de `/meta`. Aclaraciones: orden de `results`, `file_name` saneado, detección por contenido, errores del LLM abortan la petición. | Sí (solo añade) |
 | 2026-11-26 | API-INV-0008 | Adaptador Gemini real. `/meta` marca `gemini` como disponible solo con clave y modelo configurados. Sin cambios de esquema. | Sí |
+| 2026-11-26 | API-INV-0009 | Tolerancia de redondeo ±1 en monedas sin decimales (JPY, CLP, KRW...); antes daban `TAX_MISMATCH` falsos. | Sí (menos falsos positivos) |

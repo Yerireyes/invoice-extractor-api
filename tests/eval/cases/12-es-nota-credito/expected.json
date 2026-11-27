@@ -1,0 +1,47 @@
+{
+  "file": "document.pdf",
+  "is_invoice": true,
+  "invoice": {
+    "document_type": "credit_note",
+    "invoice_number": "R-2026/012",
+    "issue_date": "2026-11-02",
+    "due_date": null,
+    "currency": "EUR",
+    "country": "ES",
+    "language": "es",
+    "issuer": {
+      "name": "Electro Ejemplo S.A.",
+      "tax_id": "A00000000",
+      "tax_id_type": "CIF",
+      "address": "Valencia"
+    },
+    "recipient": {
+      "name": "Juan Demo Pérez",
+      "tax_id": "11111111H",
+      "tax_id_type": "NIF",
+      "address": null
+    },
+    "line_items": [
+      {
+        "description": "Devolución auriculares inalámbricos",
+        "quantity": "-1",
+        "unit": null,
+        "unit_price": "82.64",
+        "discount": null,
+        "amount": "-82.64"
+      }
+    ],
+    "subtotal": "-82.64",
+    "discount_total": null,
+    "taxes": [
+      {
+        "name": "IVA",
+        "rate": "21",
+        "base": "-82.64",
+        "amount": "-17.35"
+      }
+    ],
+    "total": "-99.99",
+    "payment_method": null
+  }
+}

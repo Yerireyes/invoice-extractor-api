@@ -1,0 +1,55 @@
+{
+  "file": "document.pdf",
+  "is_invoice": true,
+  "invoice": {
+    "document_type": "invoice",
+    "invoice_number": "RE-2026-0815",
+    "issue_date": "2026-10-15",
+    "due_date": "2026-10-29",
+    "currency": "EUR",
+    "country": "DE",
+    "language": "de",
+    "issuer": {
+      "name": "Beispiel Technik GmbH",
+      "tax_id": "DE000000000",
+      "tax_id_type": "USt-IdNr.",
+      "address": "Hauptstr. 5, Berlin"
+    },
+    "recipient": {
+      "name": "Muster AG",
+      "tax_id": null,
+      "tax_id_type": null,
+      "address": "Ringstr. 9, München"
+    },
+    "line_items": [
+      {
+        "description": "Wartungsvertrag Oktober",
+        "quantity": "1",
+        "unit": null,
+        "unit_price": "450.00",
+        "discount": null,
+        "amount": "450.00"
+      },
+      {
+        "description": "Ersatzteil Filter",
+        "quantity": "4",
+        "unit": "Stk",
+        "unit_price": "37.50",
+        "discount": null,
+        "amount": "150.00"
+      }
+    ],
+    "subtotal": "600.00",
+    "discount_total": null,
+    "taxes": [
+      {
+        "name": "MwSt.",
+        "rate": "19",
+        "base": "600.00",
+        "amount": "114.00"
+      }
+    ],
+    "total": "714.00",
+    "payment_method": "Überweisung"
+  }
+}

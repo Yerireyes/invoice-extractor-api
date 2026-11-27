@@ -1,0 +1,55 @@
+{
+  "file": "document.pdf",
+  "is_invoice": true,
+  "invoice": {
+    "document_type": "invoice",
+    "invoice_number": "FE-9087",
+    "issue_date": "2026-06-30",
+    "due_date": "2026-07-30",
+    "currency": "COP",
+    "country": "CO",
+    "language": "es",
+    "issuer": {
+      "name": "Ejemplo Digital S.A.S.",
+      "tax_id": "900.000.000-1",
+      "tax_id_type": "NIT",
+      "address": "Cra. 7 # 71-21, Bogotá"
+    },
+    "recipient": {
+      "name": "Cliente Demo Ltda.",
+      "tax_id": "800.000.000-2",
+      "tax_id_type": "NIT",
+      "address": null
+    },
+    "line_items": [
+      {
+        "description": "Desarrollo página web",
+        "quantity": "1",
+        "unit": null,
+        "unit_price": "3500000",
+        "discount": null,
+        "amount": "3500000"
+      },
+      {
+        "description": "Hosting anual",
+        "quantity": "1",
+        "unit": null,
+        "unit_price": "480000",
+        "discount": null,
+        "amount": "480000"
+      }
+    ],
+    "subtotal": "3980000",
+    "discount_total": null,
+    "taxes": [
+      {
+        "name": "IVA",
+        "rate": "19",
+        "base": "3980000",
+        "amount": "756200"
+      }
+    ],
+    "total": "4736200",
+    "payment_method": "Transferencia"
+  }
+}

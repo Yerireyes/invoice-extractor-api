@@ -1,0 +1,53 @@
+{
+  "file": "document.pdf",
+  "is_invoice": true,
+  "invoice": {
+    "document_type": "invoice",
+    "invoice_number": "2026/0457",
+    "issue_date": "2026-03-04",
+    "due_date": "2026-04-03",
+    "currency": "EUR",
+    "country": "ES",
+    "language": "es",
+    "issuer": {
+      "name": "Laura Ejemplo Martín",
+      "tax_id": "00000000T",
+      "tax_id_type": "NIF",
+      "address": "C/ Mayor 1, 28013 Madrid"
+    },
+    "recipient": {
+      "name": "Servicios Demo S.L.",
+      "tax_id": "B00000000",
+      "tax_id_type": "CIF",
+      "address": "Barcelona"
+    },
+    "line_items": [
+      {
+        "description": "Diseño de identidad corporativa",
+        "quantity": "1",
+        "unit": null,
+        "unit_price": "1850.00",
+        "discount": null,
+        "amount": "1850.00"
+      }
+    ],
+    "subtotal": "1850.00",
+    "discount_total": null,
+    "taxes": [
+      {
+        "name": "IVA",
+        "rate": "21",
+        "base": "1850.00",
+        "amount": "388.50"
+      },
+      {
+        "name": "IRPF",
+        "rate": "-15",
+        "base": "1850.00",
+        "amount": "-277.50"
+      }
+    ],
+    "total": "1961.00",
+    "payment_method": "Transferencia bancaria"
+  }
+}

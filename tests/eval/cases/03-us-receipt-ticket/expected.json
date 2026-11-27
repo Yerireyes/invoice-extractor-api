@@ -1,0 +1,58 @@
+{
+  "file": "document.png",
+  "is_invoice": true,
+  "invoice": {
+    "document_type": "receipt",
+    "invoice_number": null,
+    "issue_date": "2026-03-04",
+    "due_date": null,
+    "currency": "USD",
+    "country": "US",
+    "language": "en",
+    "issuer": {
+      "name": "Sample Coffee Co.",
+      "tax_id": null,
+      "tax_id_type": null,
+      "address": "1 Main St, Springfield, IL"
+    },
+    "recipient": null,
+    "line_items": [
+      {
+        "description": "Latte grande",
+        "quantity": "2",
+        "unit": null,
+        "unit_price": "4.75",
+        "discount": null,
+        "amount": "9.50"
+      },
+      {
+        "description": "Blueberry muffin",
+        "quantity": "1",
+        "unit": null,
+        "unit_price": "3.25",
+        "discount": null,
+        "amount": "3.25"
+      },
+      {
+        "description": "Bottled water",
+        "quantity": "3",
+        "unit": null,
+        "unit_price": "1.50",
+        "discount": null,
+        "amount": "4.50"
+      }
+    ],
+    "subtotal": "17.25",
+    "discount_total": null,
+    "taxes": [
+      {
+        "name": "Sales tax",
+        "rate": "8.875",
+        "base": "17.25",
+        "amount": "1.53"
+      }
+    ],
+    "total": "18.78",
+    "payment_method": "Visa"
+  }
+}

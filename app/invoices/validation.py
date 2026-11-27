@@ -4,27 +4,31 @@ Funciones puras: no importan FastAPI ni dependen de la IA. La fecha de "hoy" se 
 parámetro para que el resultado sea determinista y testeable.
 
 Convenciones:
-- Tolerancia de redondeo: ±0.02 en la moneda de la factura (una diferencia de 0.02 es válida).
+- Tolerancia de redondeo: ±0.02 en la moneda de la factura (una diferencia de 0.02 es válida);
+  ±1 en monedas sin decimales según ISO 4217 (JPY, CLP, KRW...), que redondean a la unidad.
 - Las reglas aritméticas se omiten si falta algún campo implicado (`null`). Excepción:
   `discount_total` y `line_items[].discount` en `null` cuentan como 0.
 - `params.expected` / `params.actual` son strings decimales; `expected` se redondea a 2 decimales
-  para mostrarlo, pero la comparación usa el valor exacto.
+  (a la unidad en monedas sin decimales) para mostrarlo, pero la comparación usa el valor exacto.
 - `params.line` y `params.index` son posiciones 0-based (igual que en `field`).
 """
 
 from collections.abc import Iterator, Mapping
+from dataclasses import dataclass
 from datetime import date, timedelta
 from decimal import ROUND_HALF_UP, Decimal
 
-from app.invoices.currencies import is_iso_4217
+from app.invoices.currencies import has_decimals, is_iso_4217
 from app.invoices.schemas import Invoice, Issue, IssueCode, Severity, Validation, ValidationStatus
 
 TOLERANCE = Decimal("0.02")
+ZERO_DECIMAL_TOLERANCE = Decimal(1)
 LOW_CONFIDENCE_THRESHOLD = 0.7
 FUTURE_DATE_GRACE = timedelta(days=1)
 """Margen para facturas emitidas en husos horarios por delante de UTC."""
 
 _CENT = Decimal("0.01")
+_UNIT = Decimal(1)
 
 SEVERITY: Mapping[IssueCode, Severity] = {
     IssueCode.MISSING_REQUIRED_FIELD: "error",
@@ -49,13 +53,14 @@ def validate_invoice(
 
     `field_confidence` solo se pasa desde `/extract` (genera `LOW_CONFIDENCE`).
     """
+    rounding = _Rounding.for_currency(invoice.currency)
     issues = [
         *_required_fields(invoice),
         *_currency(invoice),
-        *_total(invoice),
-        *_subtotal(invoice),
-        *_line_amounts(invoice),
-        *_taxes(invoice),
+        *_total(invoice, rounding),
+        *_subtotal(invoice, rounding),
+        *_line_amounts(invoice, rounding),
+        *_taxes(invoice, rounding),
         *_dates(invoice, today),
         *_low_confidence(field_confidence or {}),
     ]
@@ -78,15 +83,32 @@ def _issue(code: IssueCode, field: str | None, **params: object) -> Issue:
     return Issue(code=code, severity=SEVERITY[code], field=field, params=params)
 
 
+@dataclass(frozen=True, slots=True)
+class _Rounding:
+    tolerance: Decimal
+    display: Decimal
+
+    @classmethod
+    def for_currency(cls, currency: str | None) -> _Rounding:
+        if has_decimals(currency):
+            return cls(TOLERANCE, _CENT)
+        return cls(ZERO_DECIMAL_TOLERANCE, _UNIT)
+
+
 def _mismatch(
-    code: IssueCode, field: str, expected: Decimal, actual: Decimal, **params: object
+    code: IssueCode,
+    field: str,
+    expected: Decimal,
+    actual: Decimal,
+    rounding: _Rounding,
+    **params: object,
 ) -> Iterator[Issue]:
-    if abs(expected - actual) > TOLERANCE:
+    if abs(expected - actual) > rounding.tolerance:
         yield _issue(
             code,
             field,
             **params,
-            expected=_fmt(expected.quantize(_CENT, rounding=ROUND_HALF_UP)),
+            expected=_fmt(expected.quantize(rounding.display, rounding=ROUND_HALF_UP)),
             actual=_fmt(actual),
         )
 
@@ -112,23 +134,25 @@ def _currency(invoice: Invoice) -> Iterator[Issue]:
         yield _issue(IssueCode.INVALID_CURRENCY, "currency", value=invoice.currency)
 
 
-def _total(invoice: Invoice) -> Iterator[Issue]:
+def _total(invoice: Invoice, rounding: _Rounding) -> Iterator[Issue]:
     if invoice.subtotal is None or invoice.total is None:
         return
     discount = invoice.discount_total or Decimal(0)
     taxes = sum((tax.amount for tax in invoice.taxes), Decimal(0))
     expected = invoice.subtotal - discount + taxes
-    yield from _mismatch(IssueCode.TOTAL_MISMATCH, "total", expected, invoice.total)
+    yield from _mismatch(IssueCode.TOTAL_MISMATCH, "total", expected, invoice.total, rounding)
 
 
-def _subtotal(invoice: Invoice) -> Iterator[Issue]:
+def _subtotal(invoice: Invoice, rounding: _Rounding) -> Iterator[Issue]:
     if invoice.subtotal is None or not invoice.line_items:
         return
     expected = sum((line.amount for line in invoice.line_items), Decimal(0))
-    yield from _mismatch(IssueCode.SUBTOTAL_MISMATCH, "subtotal", expected, invoice.subtotal)
+    yield from _mismatch(
+        IssueCode.SUBTOTAL_MISMATCH, "subtotal", expected, invoice.subtotal, rounding
+    )
 
 
-def _line_amounts(invoice: Invoice) -> Iterator[Issue]:
+def _line_amounts(invoice: Invoice, rounding: _Rounding) -> Iterator[Issue]:
     for index, line in enumerate(invoice.line_items):
         if line.quantity is None or line.unit_price is None:
             continue
@@ -138,17 +162,23 @@ def _line_amounts(invoice: Invoice) -> Iterator[Issue]:
             f"line_items.{index}.amount",
             expected,
             line.amount,
+            rounding,
             line=index,
         )
 
 
-def _taxes(invoice: Invoice) -> Iterator[Issue]:
+def _taxes(invoice: Invoice, rounding: _Rounding) -> Iterator[Issue]:
     for index, tax in enumerate(invoice.taxes):
         if tax.base is None or tax.rate is None:
             continue
         expected = tax.base * tax.rate / 100
         yield from _mismatch(
-            IssueCode.TAX_MISMATCH, f"taxes.{index}.amount", expected, tax.amount, index=index
+            IssueCode.TAX_MISMATCH,
+            f"taxes.{index}.amount",
+            expected,
+            tax.amount,
+            rounding,
+            index=index,
         )
 
 
