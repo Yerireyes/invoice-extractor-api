@@ -366,3 +366,38 @@ def test_issues_follow_rule_order() -> None:
         IssueCode.DUE_BEFORE_ISSUE,
     ]
     assert validation.status == "invalid"
+
+
+# --- Monedas sin decimales ----------------------------------------------------------------------
+
+
+def test_zero_decimal_currency_tolerates_rounding_to_unit() -> None:
+    validation = _validate(
+        currency="JPY",
+        line_items=[_line(quantity="1", unit_price="1280", discount=None, amount="1280")],
+        subtotal="1280",
+        taxes=[{"name": "Consumption tax", "rate": "8", "base": "1280", "amount": "102"}],
+        total="1382",
+    )
+
+    assert validation.status == "valid"
+
+
+def test_zero_decimal_currency_still_flags_real_mismatches() -> None:
+    validation = _validate(
+        currency="JPY",
+        line_items=[_line(quantity="1", unit_price="1280", discount=None, amount="1280")],
+        subtotal="1280",
+        taxes=[{"name": "Consumption tax", "rate": "8", "base": "1280", "amount": "100"}],
+        total="1380",
+    )
+
+    issue = _only(validation, IssueCode.TAX_MISMATCH)
+    assert issue.params == {"index": 0, "expected": "102", "actual": "100"}
+
+
+@pytest.mark.parametrize(("currency", "flagged"), [("EUR", True), ("KRW", False), (None, True)])
+def test_tolerance_depends_on_currency(currency: str | None, flagged: bool) -> None:
+    validation = _validate(currency=currency, total="1160.90")
+
+    assert (IssueCode.TOTAL_MISMATCH in _codes(validation)) is flagged

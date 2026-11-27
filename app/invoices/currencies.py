@@ -22,3 +22,14 @@ ISO_4217_CODES: frozenset[str] = frozenset(_CODES.split())
 def is_iso_4217(code: str | None) -> bool:
     """`True` si `code` es un código ISO 4217 reconocido (en mayúsculas)."""
     return code is not None and code in ISO_4217_CODES
+
+
+_ZERO_DECIMAL = "BIF CLP DJF GNF ISK JPY KMF KRW PYG RWF UGX UYI VND VUV XAF XOF XPF"
+
+ZERO_DECIMAL_CODES: frozenset[str] = frozenset(_ZERO_DECIMAL.split())
+"""Monedas sin unidades menores según ISO 4217 (los importes se redondean a la unidad)."""
+
+
+def has_decimals(code: str | None) -> bool:
+    """`False` para monedas sin decimales (JPY, CLP, KRW...)."""
+    return code not in ZERO_DECIMAL_CODES
