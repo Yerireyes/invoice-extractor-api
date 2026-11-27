@@ -226,7 +226,7 @@ Estados: `pendiente` | `en curso` | `hecha`. Añade al final las historias nueva
 | API-INV-0008 | `feat/invoices/api-inv-0008` | hecha |
 | API-INV-0009 | `feat/invoices/api-inv-0009` | hecha |
 | API-COR-0010 | `feat/core/api-cor-0010` | hecha |
-| API-EXP-0011 | `feat/export/api-exp-0011` | pendiente |
+| API-EXP-0011 | `feat/export/api-exp-0011` | hecha |
 | API-EXP-0012 | `feat/export/api-exp-0012` | pendiente |
 | API-INV-0013 | `feat/invoices/api-inv-0013` | pendiente |
 | API-DEP-0014 | `chore/deploy/api-dep-0014` | pendiente |
