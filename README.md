@@ -1,6 +1,7 @@
 # Invoice Extractor API
 
 [![CI](https://github.com/Yerireyes/invoice-extractor-api/actions/workflows/ci.yml/badge.svg)](https://github.com/Yerireyes/invoice-extractor-api/actions/workflows/ci.yml)
+[![Release](https://img.shields.io/github/v/release/Yerireyes/invoice-extractor-api)](https://github.com/Yerireyes/invoice-extractor-api/releases)
 [![Python 3.14](https://img.shields.io/badge/python-3.14-blue)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
@@ -235,6 +236,51 @@ Cada PR a `main` (y cada push a `main`) ejecuta en GitHub Actions:
 | [`branch-name.yml`](.github/workflows/branch-name.yml) | Ramas con el formato `<tipo>/<modulo>/api-<mod>-<NNNN>` |
 
 Dependabot propone cada mes actualizaciones agrupadas de dependencias, actions e imágenes Docker.
+
+## Versiones y despliegue
+
+Producción solo cambia **al publicar un release**, nunca en cada push a `main`:
+
+1. [`release.yml`](.github/workflows/release.yml) ([release-please](https://github.com/googleapis/release-please))
+   mantiene abierto un PR *"publicar versión X.Y.Z"* con la próxima versión semver, calculada a partir de los
+   [Conventional Commits](https://www.conventionalcommits.org/) (`feat` → minor, `fix` → patch), y el
+   [`CHANGELOG.md`](CHANGELOG.md). También actualiza la versión en `pyproject.toml`, `uv.lock` y
+   `openapi.json` (`/meta` y `/docs` la leen del paquete).
+2. Al mergear ese PR, release-please crea el tag `vX.Y.Z` y el GitHub Release.
+3. [`deploy.yml`](.github/workflows/deploy.yml) sube la app a un **Hugging Face Space (SDK Docker)** y
+   espera a que `/api/v1/meta` anuncie la nueva versión y `/api/v1/health` responda 200. Si no lo hace en
+   20 minutos, el job falla. También se puede lanzar a mano (*Run workflow*).
+
+### Configuración inicial (una sola vez)
+
+**Hugging Face**
+
+1. Crea un Space en <https://huggingface.co/new-space> con **SDK: Docker** (plantilla *Blank*) y hardware
+   *CPU basic* (gratis).
+2. En *Settings → Variables and secrets* del Space, añade como **secrets**:
+   - `GEMINI_API_KEY`: tu clave de Google AI Studio.
+   - `GEMINI_MODEL`: `gemini-3.5-flash-lite`.
+   - `ALLOWED_ORIGINS`: la URL del frontend en Vercel (p. ej. `https://invoice-extractor-web.vercel.app`).
+3. Crea un token en <https://huggingface.co/settings/tokens> (*Fine-grained*, con permiso de escritura
+   solo sobre ese Space).
+
+El README del Space (frontmatter `sdk: docker`, `app_port: 7860`) y el puerto `7860` se generan en el
+paso de deploy: no hay que mantener nada aparte.
+
+**GitHub** (*Settings → Secrets and variables → Actions*)
+
+| Tipo | Nombre | Valor |
+|---|---|---|
+| Variable | `HF_SPACE` | `usuario/nombre` del Space |
+| Secreto | `HF_TOKEN` | El token de Hugging Face del paso 3 |
+| Secreto | `RELEASE_PLEASE_TOKEN` | [PAT fine-grained](https://github.com/settings/personal-access-tokens/new) solo para este repositorio con permisos *Contents* y *Pull requests* de lectura y escritura |
+
+`RELEASE_PLEASE_TOKEN` es necesario porque lo que crea el `GITHUB_TOKEN` por defecto no dispara otros
+workflows: el PR de release no ejecutaría los checks obligatorios de `main` y el release no lanzaría el
+despliegue.
+
+La API queda en `https://<usuario>-<nombre>.hf.space` (documentación en `/docs`). Un Space gratuito se
+duerme tras 48 h sin tráfico; la primera petición después tarda unos segundos en despertarlo.
 
 ## Licencia
 

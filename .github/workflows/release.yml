@@ -1,0 +1,31 @@
+name: Release
+
+# release-please mantiene abierto un PR de release con la próxima versión (semver a partir de los
+# Conventional Commits: feat → minor, fix → patch) y el CHANGELOG. Al mergearlo crea el tag y el
+# GitHub Release, y ese release dispara `deploy.yml`.
+#
+# Usa RELEASE_PLEASE_TOKEN (PAT fine-grained) en lugar de GITHUB_TOKEN: lo que crea GITHUB_TOKEN no
+# dispara otros workflows, así que el PR de release no pasaría los checks obligatorios de `main`
+# ni el release publicado lanzaría el despliegue.
+
+on:
+  push:
+    branches: [main]
+
+permissions: {}
+
+concurrency:
+  group: release-please
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    name: release-please
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: googleapis/release-please-action@v5
+        with:
+          token: ${{ secrets.RELEASE_PLEASE_TOKEN }}
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json

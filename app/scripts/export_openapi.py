@@ -3,6 +3,10 @@
 Uso:
     uv run python -m app.scripts.export_openapi          # regenera el archivo
     uv run python -m app.scripts.export_openapi --check  # falla si está desactualizado (CI)
+
+`--check` compara el **contenido** JSON, no el texto: release-please actualiza `info.version` con
+`JSON.stringify`, que reordena las claves numéricas (`"413"` antes que `"500"`) y escribe `0.0`
+como `0`. El esquema es el mismo y el check no debe fallar en el PR de release.
 """
 
 import argparse
@@ -29,8 +33,7 @@ def main(argv: list[str] | None = None, path: Path = OPENAPI_PATH) -> int:
 
     content = render_openapi()
     if args.check:
-        current = path.read_text(encoding="utf-8") if path.exists() else ""
-        if current != content:
+        if not _same_schema(path, content):
             print(
                 f"{path.name} está desactualizado. "
                 "Ejecuta: uv run python -m app.scripts.export_openapi",
@@ -43,6 +46,16 @@ def main(argv: list[str] | None = None, path: Path = OPENAPI_PATH) -> int:
     path.write_text(content, encoding="utf-8", newline="\n")
     print(f"{path.name} generado.")
     return 0
+
+
+def _same_schema(path: Path, content: str) -> bool:
+    if not path.exists():
+        return False
+    try:
+        current = json.loads(path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return False
+    return bool(current == json.loads(content))
 
 
 if __name__ == "__main__":
