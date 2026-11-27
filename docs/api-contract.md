@@ -312,7 +312,16 @@ Detalles:
 
 ## 8. PDF exportado
 
-Un único PDF, una factura por página: encabezado (tipo, número, fechas), emisor/receptor, tabla de conceptos, impuestos, totales, y un bloque de alertas si las hay. Textos fijos en el idioma de `options.language`.
+Un único PDF (A4), una factura por página: encabezado (tipo, número, fechas), emisor/receptor, tabla de conceptos, impuestos, totales, y un bloque de alertas si las hay. Textos fijos en el idioma de `options.language`.
+
+Detalles:
+- Cada factura **empieza en una página nueva**. Si tiene muchos conceptos continúa en la página siguiente (se repite el encabezado de la tabla), así que el número de páginas puede ser mayor que el de facturas.
+- Encabezado: tipo y número (`Factura A-00123`), Ref (`F-001`, igual que en el Excel) y estado de validación coloreado. Debajo: fecha de emisión, vencimiento, moneda, método de pago y `source_file_name` (si se envía).
+- Secciones: Emisor / Receptor (nombre, ID fiscal y tipo, dirección, email, teléfono), Conceptos (si `include_line_items`), Impuestos (si hay), Totales (subtotal, descuentos, impuestos, total, con el código de moneda), Notas (si hay) y Alertas (si `include_alerts`; "Sin alertas" si no hay ninguna).
+- Montos con separador de miles y 2 decimales (0 en monedas sin decimales). Datos ausentes: `—`.
+- Pie de página: "Generado el AAAA-MM-DD" (UTC) y "Página X de N".
+- Fuente DejaVu Sans incrustada: acentos, ñ, símbolos de moneda (€ ₹ ₩ ₫ ₪ ₺…), griego y cirílico. No cubre chino, japonés ni coreano.
+- La exportación revalida las facturas (igual que el Excel) y aplica el mismo límite `TOO_MANY_INVOICES`.
 
 ## 9. Nombres de esquemas (`components.schemas` de `openapi.json`)
 
@@ -342,3 +351,4 @@ Estables: el frontend genera sus tipos a partir de ellos. Un esquema aparece en 
 | 2026-11-26 | API-INV-0009 | Tolerancia de redondeo ±1 en monedas sin decimales (JPY, CLP, KRW...); antes daban `TAX_MISMATCH` falsos. | Sí (menos falsos positivos) |
 | 2026-11-26 | API-COR-0010 | Límite por IP en `/extract` (429 `RATE_LIMITED`) y tope diario global de documentos para Gemini (503 `LLM_QUOTA_EXCEEDED` con `retry_after_s`). Una petición multiarchivo reserva todos sus documentos o se rechaza entera. | Sí |
 | 2026-11-26 | API-EXP-0011 | `POST /exports/excel` implementado. Nuevo campo opcional `source_file_name` en cada factura exportada (columna *Archivo*). `options` opcional con valores por defecto. La exportación revalida las facturas. | Sí (solo añade) |
+| 2026-11-27 | API-EXP-0012 | `POST /exports/pdf` implementado. Sección 8 detallada: cada factura empieza en página nueva y puede ocupar varias, pie con fecha y paginación, fuente sin soporte CJK. | Sí (solo añade) |

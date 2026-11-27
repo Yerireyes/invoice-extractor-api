@@ -61,6 +61,7 @@ dependencias de FastAPI a partir de la configuración.
 | `POST` | `/api/v1/invoices/extract` | Sube 1..10 imágenes o PDF y devuelve las facturas extraídas y validadas (éxito parcial por archivo) |
 | `POST` | `/api/v1/invoices/validate` | Revalida una factura editada: cuadre aritmético (±0.02), campos obligatorios, moneda ISO 4217 y fechas |
 | `POST` | `/api/v1/exports/excel` | Exporta facturas a `.xlsx`: 5 hojas como Tablas de Excel, totales por moneda con fórmulas, alertas traducidas (es/en) |
+| `POST` | `/api/v1/exports/pdf` | Exporta facturas a `.pdf`: una factura por página (conceptos, impuestos, totales y alertas), fuente Unicode incrustada (es/en) |
 
 Los errores siguen [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457) (`application/problem+json`)
 con un `code` estable y `params`, para que el cliente traduzca los mensajes:
@@ -205,3 +206,5 @@ Dependabot propone cada mes actualizaciones agrupadas de dependencias, actions e
 ## Licencia
 
 [MIT](LICENSE)
+
+La fuente [DejaVu Sans](https://dejavu-fonts.github.io/) incluida en `app/export/fonts/` tiene su propia licencia libre ([`LICENSE-DejaVu.txt`](app/export/fonts/LICENSE-DejaVu.txt)).

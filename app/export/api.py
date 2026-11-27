@@ -9,6 +9,7 @@ from fastapi.responses import Response
 from app.core.config import Settings, get_settings
 from app.core.errors import AppError, ErrorCode, problem_responses
 from app.export.adapters.excel import XLSX_MEDIA_TYPE, ExcelExporter
+from app.export.adapters.pdf import PDF_MEDIA_TYPE, PdfExporter
 from app.export.ports import Exporter
 from app.export.schemas import ExportRequest
 from app.export.service import export_file_name, export_invoices
@@ -23,6 +24,10 @@ def get_now() -> datetime:
 
 def get_excel_exporter() -> Exporter:
     return ExcelExporter()
+
+
+def get_pdf_exporter(now: Annotated[datetime, Depends(get_now)]) -> Exporter:
+    return PdfExporter(generated_on=now.date())
 
 
 def _file_response(media_type: str) -> dict[int | str, dict[str, Any]]:
@@ -62,6 +67,21 @@ def _export(
 def export_excel(
     request: ExportRequest,
     exporter: Annotated[Exporter, Depends(get_excel_exporter)],
+    settings: Annotated[Settings, Depends(get_settings)],
+    now: Annotated[datetime, Depends(get_now)],
+) -> Response:
+    return _export(request, exporter, settings, now)
+
+
+@router.post(
+    "/pdf",
+    summary="Exporta facturas a PDF (una factura por página)",
+    response_class=Response,
+    responses=_file_response(PDF_MEDIA_TYPE),
+)
+def export_pdf(
+    request: ExportRequest,
+    exporter: Annotated[Exporter, Depends(get_pdf_exporter)],
     settings: Annotated[Settings, Depends(get_settings)],
     now: Annotated[datetime, Depends(get_now)],
 ) -> Response:
