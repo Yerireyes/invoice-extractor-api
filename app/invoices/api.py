@@ -3,10 +3,11 @@
 from datetime import UTC, date, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Request, UploadFile
 
 from app.core.config import LLMProvider, Settings, get_settings
 from app.core.errors import AppError, ErrorCode, problem_responses
+from app.core.rate_limit import DailyQuota
 from app.invoices.ports import ExtractorFactory
 from app.invoices.providers import get_extractor_factory
 from app.invoices.schemas import ExtractResponse, ValidateRequest, ValidateResponse
@@ -25,6 +26,17 @@ def get_today() -> date:
     return datetime.now(UTC).date()
 
 
+def enforce_extract_rate_limit(request: Request) -> None:
+    """Límite por IP. Tras el proxy, Uvicorn (`--proxy-headers`) ya pone la IP real del cliente."""
+    client_ip = request.client.host if request.client else "unknown"
+    request.app.state.extract_rate_limiter.hit(client_ip)
+
+
+def get_daily_quota(request: Request) -> DailyQuota:
+    quota: DailyQuota = request.app.state.daily_quota
+    return quota
+
+
 @router.post(
     "/validate",
     summary="Revalida una factura editada (no llama a la IA)",
@@ -39,10 +51,13 @@ def validate(
 @extract_router.post(
     "/extract",
     summary="Sube 1..N facturas (imágenes o PDF) y devuelve sus datos extraídos y validados",
-    responses=problem_responses(413, 422, 503),
+    responses=problem_responses(413, 422, 429, 503),
+    dependencies=[Depends(enforce_extract_rate_limit)],
 )
 async def extract(
+    *,
     settings: Annotated[Settings, Depends(get_settings)],
+    daily_quota: Annotated[DailyQuota, Depends(get_daily_quota)],
     extractor_factory: Annotated[ExtractorFactory, Depends(get_extractor_factory)],
     today: Annotated[date, Depends(get_today)],
     files: Annotated[
@@ -65,6 +80,7 @@ async def extract(
         max_file_size_bytes=settings.max_file_size_mb * MB,
         max_pdf_pages=settings.max_pdf_pages,
         today=today,
+        daily_quota=daily_quota,
     )
     return await service.extract([IncomingFile(name=f.filename, stream=f) for f in uploads])
 

@@ -66,11 +66,13 @@ def test_multipage_pdf(api: TestClient) -> None:
     assert response.json()["results"][0]["meta"]["pages"] == 2
 
 
-def test_low_confidence_fields_are_reported_as_info(api: TestClient) -> None:
-    results = [
-        _post(api, [_upload(image_bytes("PNG", size=(10 + n, 10)))]).json()["results"][0]
-        for n in range(15)
-    ]
+def test_low_confidence_fields_are_reported_as_info() -> None:
+    settings = Settings(_env_file=None, rate_limit_extract="100/minute")
+    with _client(settings) as client:
+        results = [
+            _post(client, [_upload(image_bytes("PNG", size=(10 + n, 10)))]).json()["results"][0]
+            for n in range(15)
+        ]
 
     issues = [issue for result in results for issue in result["validation"]["issues"]]
     low = [issue for issue in issues if issue["code"] == "LOW_CONFIDENCE"]

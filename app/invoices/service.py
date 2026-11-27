@@ -15,7 +15,9 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import PurePath
 
+from app.core.config import LLMProvider
 from app.core.errors import AppError
+from app.core.rate_limit import DailyQuota
 from app.invoices.ports import ExtractionFailedError, InvoiceExtractor, NotAnInvoiceError
 from app.invoices.schemas import (
     ExtractionFailure,
@@ -35,6 +37,8 @@ logger = logging.getLogger(__name__)
 MAX_CONCURRENT_FILES = 3
 """Archivos procesados a la vez (protege la cuota del proveedor y la CPU)."""
 MAX_FILE_NAME_LENGTH = 255
+METERED_PROVIDERS: frozenset[LLMProvider] = frozenset({"gemini"})
+"""Proveedores con cuota diaria limitada (cada documento es una llamada facturable)."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -52,14 +56,19 @@ class ExtractionService:
         max_pdf_pages: int,
         today: date,
         concurrency: int = MAX_CONCURRENT_FILES,
+        daily_quota: DailyQuota | None = None,
     ) -> None:
         self._extractor = extractor
         self._max_file_size_bytes = max_file_size_bytes
         self._max_pdf_pages = max_pdf_pages
         self._today = today
         self._semaphore = asyncio.Semaphore(concurrency)
+        self._daily_quota = daily_quota
 
     async def extract(self, files: Sequence[IncomingFile]) -> ExtractResponse:
+        # Se reservan todos los documentos antes de empezar: o caben todos o se rechaza la petición.
+        if self._daily_quota and self._extractor.provider in METERED_PROVIDERS:
+            self._daily_quota.consume(len(files))
         try:
             async with asyncio.TaskGroup() as group:
                 tasks = [

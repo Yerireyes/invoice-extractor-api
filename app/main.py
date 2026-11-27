@@ -12,6 +12,7 @@ from app.core.errors import (
     register_error_handlers,
 )
 from app.core.logging import configure_logging
+from app.core.rate_limit import DailyQuota, IpRateLimiter
 from app.core.version import APP_VERSION
 from app.invoices.api import MB, extract_body_limit, extract_router
 from app.invoices.api import router as invoices_router
@@ -38,6 +39,9 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         separate_input_output_schemas=False,
     )
     app.dependency_overrides[get_settings] = lambda: settings
+    # Estado por aplicación (en memoria): límite por IP de /extract y cuota diaria de Gemini.
+    app.state.extract_rate_limiter = IpRateLimiter(settings.rate_limit_extract)
+    app.state.daily_quota = DailyQuota(settings.daily_document_limit)
     # Orden: el último añadido es el más externo. CORS envuelve al 413 reescrito.
     app.add_middleware(RequestTooLargeProblemMiddleware)
     app.add_middleware(
