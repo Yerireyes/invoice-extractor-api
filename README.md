@@ -108,8 +108,11 @@ multi-stage, corre con un usuario sin privilegios e incluye un `HEALTHCHECK`.
 | `fake` | Desarrollo sin clave | Determinista, sin red: devuelve facturas de ejemplo. Nunca disponible en producción. |
 
 **Gemini**: crea una clave gratuita en [Google AI Studio](https://aistudio.google.com/apikey) y ponla en `.env`
-junto con el modelo (`gemini-3.8-flash` a noviembre de 2026; la lista vigente está en la
-[documentación de modelos](https://ai.google.dev/gemini-api/docs/models)). El adaptador usa un esquema
+junto con el modelo. A noviembre de 2026 se recomienda `gemini-3.5-flash-lite`: en el nivel gratuito
+ofrece 15 peticiones/min y 50/día (frente a 5/min y 20/día de `gemini-3.8-flash`, que además se
+satura con frecuencia) y extrae correctamente las facturas de prueba en ~4 s. La lista vigente está en la
+[documentación de modelos](https://ai.google.dev/gemini-api/docs/models) y los límites de tu proyecto
+en [AI Studio](https://aistudio.google.com/rate-limit). El adaptador usa un esquema
 propio para el LLM (solo strings) y lo convierte al dominio con `Decimal`, normalizando formatos como
 `1.234,50`. Se reintenta una vez ante errores transitorios (5xx, timeout); una cuota agotada responde
 503 `LLM_QUOTA_EXCEEDED` con `Retry-After` cuando Google lo indica.
@@ -124,7 +127,7 @@ Todas las variables están documentadas en [`.env.example`](.env.example).
 | `PORT` | `8000` | Puerto HTTP (en Hugging Face Spaces: `7860`) |
 | `LLM_PROVIDER` | `gemini` | `gemini` \| `ollama` \| `fake` |
 | `GEMINI_API_KEY` | — | Clave de Google AI Studio (secreto) |
-| `GEMINI_MODEL` | — | Modelo Flash con visión (recomendado: `gemini-3.8-flash`) |
+| `GEMINI_MODEL` | — | Modelo Flash con visión (recomendado: `gemini-3.5-flash-lite`) |
 | `GEMINI_TIMEOUT_S` | `60` | Timeout por llamada a Gemini (s) |
 | `OLLAMA_ENABLED` | `false` | Habilita el proveedor local |
 | `OLLAMA_BASE_URL` | `http://ollama:11434` | URL de Ollama |

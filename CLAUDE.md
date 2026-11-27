@@ -159,7 +159,7 @@ docker compose --profile ollama up        # API + Ollama local
 | `PORT` | `8000` | En Hugging Face Spaces: `7860` |
 | `LLM_PROVIDER` | `gemini` | `gemini` \| `ollama` \| `fake` |
 | `GEMINI_API_KEY` | — | Secreto. Nunca en el repo |
-| `GEMINI_MODEL` | `gemini-3.8-flash` | Modelo Flash con visión vigente (verificado 2026-11-26: estable y con nivel gratuito) |
+| `GEMINI_MODEL` | `gemini-3.5-flash-lite` | Modelo Flash con visión vigente. Elegido el 2026-11-26: estable, nivel gratuito de 15 RPM / 50 RPD y probado con la API real. `gemini-3.8-flash` (5 RPM / 20 RPD) respondía 503/504 por saturación |
 | `GEMINI_TIMEOUT_S` | `60` | Timeout por llamada; un reintento con backoff solo en errores transitorios |
 | `OLLAMA_ENABLED` | `false` | |
 | `OLLAMA_BASE_URL` | `http://ollama:11434` | |
