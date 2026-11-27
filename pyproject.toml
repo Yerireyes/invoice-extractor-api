@@ -11,6 +11,7 @@ dependencies = [
     "fastapi>=0.165.0",
     "google-genai>=3.6.1",
     "httpx2>=2.16.2",
+    "limits>=5.8.0",
     "ollama>=0.6.3",
     "openpyxl>=3.1.5",
     "pillow>=13.0.0",
@@ -19,7 +20,7 @@ dependencies = [
     "pypdfium2>=5.15.2",
     "python-multipart>=0.0.34",
     "reportlab>=5.1.2",
-    "slowapi>=0.1.10",
+    "tzdata>=2026.6",
     "uvicorn[standard]>=0.54.0",
 ]
 
