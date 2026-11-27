@@ -107,6 +107,8 @@ TEXTS: Mapping[ExportLanguage, Mapping[str, str]] = {
         "pdf.no_alerts": "Sin alertas",
         "pdf.page": "Página {page} de {pages}",
         "pdf.generated": "Generado el {date}",
+        "pdf.tax_id": "ID fiscal",
+        "pdf.notes": "Notas",
     },
     "en": {
         "sheet.summary": "Summary",
@@ -194,6 +196,8 @@ TEXTS: Mapping[ExportLanguage, Mapping[str, str]] = {
         "pdf.no_alerts": "No alerts",
         "pdf.page": "Page {page} of {pages}",
         "pdf.generated": "Generated on {date}",
+        "pdf.tax_id": "Tax ID",
+        "pdf.notes": "Notes",
     },
 }
 
